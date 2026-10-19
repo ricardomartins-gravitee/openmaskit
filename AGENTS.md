@@ -1,11 +1,11 @@
-# Maintaining Mail Privacy Proxy
+# Maintaining MCP Privacy Proxy
 
 This repository is an unofficial maintained fork of MaskitMCP/openmaskit.
 
 - Preserve sender/recipient masking, empty-string handling, size-limit withholding and startup rule restoration.
 - Keep all actual mailbox data, credentials, logs, databases, runtime environments and backups under the ignored `.runtime/` directory or the existing user application data directory. Never commit them or upload them.
-- Keep `LICENSE`, `NOTICE` and upstream attribution. Use the Mail Privacy Proxy name and distinct icon for this modified build.
-- Keep the fork private while the confirmed privacy bugs await coordinated upstream handling. The user's authorization to maintain this fork includes ordinary upstream synchronization, commits, pushes, testing and deploying compatible updates. It does not authorize sending email or changing repository visibility.
+- Keep `LICENSE`, `NOTICE` and upstream attribution. Use the MCP Privacy Proxy name and distinct icon for this modified build.
+- The user explicitly authorized publishing these privacy fixes and regression tests in a public native GitHub fork on 19 October 2026. Ordinary upstream synchronization, maintenance commits, pushes, testing and compatible deployments are authorized. Sending email and changing access permissions beyond this publication are not authorized.
 - Use `scripts/maintain.py --push --deploy` for scheduled maintenance. It prepares candidates separately and runs the complete non-browser suite plus a real synthetic startup/MCP check before advancing the maintained branch.
 - Refresh locked dependencies at least weekly. Never remove the MCP major-version constraint without an intentional compatibility migration.
 - On merge conflicts, test failures, unexpected privilege changes or breaking configuration/schema changes, keep the last working release running and report the exact action needed.

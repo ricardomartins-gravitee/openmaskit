@@ -1,10 +1,10 @@
-<!-- Modified for Mail Privacy Proxy: unofficial fork identity. -->
+<!-- Modified for MCP Privacy Proxy: unofficial fork identity. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mail Privacy Proxy - Tools</title>
+    <title>MCP Privacy Proxy - Tools</title>
     <link rel="icon" type="image/svg+xml" href="/static/fork-icon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,7 +18,7 @@
 <body>
 <div x-data="toolsPage()" x-init="init()">
     <header>
-        <h1><a href="/" class="logo-link" aria-label="Mail Privacy Proxy home"><img src="/static/fork-icon.svg" alt="" class="header-icon">Mail Privacy Proxy</a></h1>
+        <h1><a href="/" class="logo-link" aria-label="MCP Privacy Proxy home"><img src="/static/fork-icon.svg" alt="" class="header-icon">MCP Privacy Proxy</a></h1>
         <nav>
             <a href="/">Servers</a>
             <a href="/marketplace">Marketplace</a>
@@ -385,9 +385,9 @@
                         <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
                     </svg>
                     <div>
-                        <strong>Copy this configuration to connect your AI coding tool to this server through Mail Privacy Proxy's proxy.</strong>
+                        <strong>Copy this configuration to connect your AI coding tool to this server through MCP Privacy Proxy's proxy.</strong>
                         <p style="margin: 0.5rem 0 0 0; color: var(--text-muted); font-size: 0.875rem;">
-                            Your agent will route all tool calls through Mail Privacy Proxy for data masking and security controls.
+                            Your agent will route all tool calls through MCP Privacy Proxy for data masking and security controls.
                         </p>
                     </div>
                 </div>
@@ -501,7 +501,7 @@ function toolsPage() {
         async init() {
             const parts = window.location.pathname.split('/targets/')[1];
             this.targetName = decodeURIComponent(parts.split('/tools')[0]);
-            document.title = `Mail Privacy Proxy - ${this.targetName}`;
+            document.title = `MCP Privacy Proxy - ${this.targetName}`;
             try {
                 await Promise.all([this.loadTools(), this.loadRules(), this.loadMappers(), this.loadGuardrails(), this.loadMappings()]);
             } catch (e) {

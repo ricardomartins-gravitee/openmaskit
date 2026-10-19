@@ -1,8 +1,8 @@
 {
-  "name": "Mail Privacy Proxy",
+  "name": "MCP Privacy Proxy",
   "upstream": "https://github.com/MaskitMCP/openmaskit.git",
   "upstream_branch": "main",
   "upstream_commit": "07f828a65b742140f4c47edb7c216d40aeb86c76",
-  "privacy_revision": 1,
+  "privacy_revision": 2,
   "dependencies_refreshed": "2026-10-19"
 }

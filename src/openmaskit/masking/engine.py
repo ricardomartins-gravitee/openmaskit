@@ -1,4 +1,4 @@
-# Modified for Mail Privacy Proxy: privacy correctness and startup fixes.
+# Modified for MCP Privacy Proxy: privacy correctness and startup fixes.
 """Masking engine: mask values in responses, unmask in arguments."""
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ class MaskingEngine:
         self._counters: dict[str, int] = {}
         self._mappers: list[ResponseMapper] = []
         self._compiled_patterns: dict[int, re.Pattern] = {}
-        logger.info("Mail Privacy Proxy protections active (revision %s)", FORK_PRIVACY_FIX)
+        logger.info("MCP Privacy Proxy protections active (revision %s)", FORK_PRIVACY_FIX)
         self._guardrails: list[ArgumentGuardrail] = []
         self._compiled_guardrails: dict[int, re.Pattern] = {}
         self._injections: list[ArgumentInjection] = []
@@ -344,7 +344,7 @@ class MaskingEngine:
                     "content": [{
                         "type": "text",
                         "text": (
-                            "Mail Privacy Proxy withheld this response because a text block "
+                            "MCP Privacy Proxy withheld this response because a text block "
                             "exceeds the field-masking size limit. Request fewer "
                             "messages or a smaller response, then retry."
                         ),

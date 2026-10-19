@@ -1,10 +1,10 @@
-<!-- Modified for Mail Privacy Proxy: unofficial fork identity. -->
+<!-- Modified for MCP Privacy Proxy: unofficial fork identity. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mail Privacy Proxy - Tool</title>
+    <title>MCP Privacy Proxy - Tool</title>
     <link rel="icon" type="image/svg+xml" href="/static/fork-icon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,7 +18,7 @@
 <body>
 <div x-data="toolDetail()" x-init="init()">
     <header>
-        <h1><a href="/" class="logo-link" aria-label="Mail Privacy Proxy home"><img src="/static/fork-icon.svg" alt="" class="header-icon">Mail Privacy Proxy</a></h1>
+        <h1><a href="/" class="logo-link" aria-label="MCP Privacy Proxy home"><img src="/static/fork-icon.svg" alt="" class="header-icon">MCP Privacy Proxy</a></h1>
         <nav>
             <a href="/">Servers</a>
             <a href="/marketplace">Marketplace</a>
@@ -531,7 +531,7 @@ function toolDetail() {
             const parts = afterTargets.split('/tools/');
             this.targetName = decodeURIComponent(parts[0]);
             this.toolName = decodeURIComponent(parts[1] || '');
-            document.title = `Mail Privacy Proxy - ${this.targetName} - ${this.toolName}`;
+            document.title = `MCP Privacy Proxy - ${this.targetName} - ${this.toolName}`;
             try {
                 await Promise.all([this.loadTool(), this.loadRules(), this.loadMappers(), this.loadGuardrails(), this.loadInjections()]);
             } catch (e) {

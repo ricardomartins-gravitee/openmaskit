@@ -1,4 +1,4 @@
-# Mail Privacy Proxy
+# MCP Privacy Proxy
 
 Unofficial maintained fork of [OpenMaskit](https://github.com/MaskitMCP/openmaskit). Not affiliated with or endorsed by its maintainers. See [FORK.md](FORK.md) for the fixes, update process and recovery.
 

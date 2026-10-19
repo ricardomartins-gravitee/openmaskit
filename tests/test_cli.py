@@ -81,4 +81,4 @@ class TestVersion:
         assert isinstance(__version__, str)
         assert len(__version__) > 0
         from importlib.metadata import version
-        assert __version__ == version("mail-privacy-proxy")
+        assert __version__ == version("mcp-privacy-proxy")
