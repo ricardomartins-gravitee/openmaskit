@@ -82,7 +82,7 @@ def maintain(args):
         # A previous failed candidate is retained for diagnosis and never reused.
         candidate = candidate.with_name(candidate.name + '-' + datetime.now(timezone.utc).strftime('%H%M%S'))
     git('clone', '--no-hardlinks', str(ROOT), str(candidate))
-    git('config', 'user.name', 'MCP Privacy Proxy maintenance', cwd=candidate)
+    git('config', 'user.name', 'OpenMaskit maintenance', cwd=candidate)
     git('config', 'user.email', 'maintenance@localhost', cwd=candidate)
     git('fetch', '--no-tags', config['upstream'], config['upstream_branch'], cwd=candidate)
     if changed:
@@ -103,7 +103,7 @@ def maintain(args):
         suffix += '.d' + today.strftime('%Y%m%d')
     project = candidate / 'pyproject.toml'
     text = project.read_text()
-    assert 'name = "mcp-privacy-proxy"' in text, 'Fork package identity was lost'
+    assert 'name = "openmaskit"' in text, 'Fork package identity was lost'
     text = re.sub(r'^version = "[^"]+"', f'version = "{version}+{suffix}"', text, count=1, flags=re.M)
     project.write_text(text)
     config['upstream_commit'] = upstream

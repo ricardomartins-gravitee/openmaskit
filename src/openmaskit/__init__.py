@@ -1,10 +1,10 @@
-# Modified for MCP Privacy Proxy: read this fork's distribution version.
+# Modified for OpenMaskit: read this fork's distribution version.
 """OpenMaskit - MCP server wrapper that masks sensitive fields."""
 
 from importlib.metadata import version, PackageNotFoundError
 
 try:
-    __version__ = version("mcp-privacy-proxy")
+    __version__ = version("openmaskit")
 except PackageNotFoundError:
     # Running from source without the package installed
     try:

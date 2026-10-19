@@ -1,4 +1,4 @@
-# MCP Privacy Proxy
+# OpenMaskit
 
 An unofficial maintained fork of [OpenMaskit](https://github.com/MaskitMCP/openmaskit), with its Apache-2.0 license, notices and attribution preserved. It is not endorsed by the upstream project. The Python module, storage directory and environment variable names remain compatible so existing local configuration can be reused.
 
@@ -7,7 +7,7 @@ An unofficial maintained fork of [OpenMaskit](https://github.com/MaskitMCP/openm
 - Empty header strings remain empty; legacy empty aliases cannot expand text.
 - Tool results requiring field parsing are withheld when a text block exceeds the parsing limit.
 - Saved rules reload for database-managed servers during startup.
-- The distribution and command identify this fork as `mcp-privacy-proxy`, with a distinct dashboard name and icon.
+- The dashboard, distribution and command retain the original OpenMaskit name and icon. This repository remains an unofficial fork with its provenance documented here.
 - Dependencies are locked, including the existing MCP major-version compatibility constraint.
 - Reusable analyzer-backed text checks support shared definitions and server-only definitions, with local Presidio and compatible HTTP adapters. See [privacy-checks.md](docs/privacy-checks.md).
 
@@ -23,7 +23,7 @@ The GitHub workflow checks upstream every six hours and publishes tested source 
 
 The service runs from a Git commit snapshot under `.runtime/releases/`, installed normally from the frozen lockfile without editable source. `.runtime/current` points to the selected release. Source edits in this checkout cannot mutate the installed release. Before replacement, the service shuts down gracefully and the application database is backed up locally. The new service must report the expected package version and restore every saved rule. A failed rollout restores the previous service and database automatically.
 
-The first migration uses `scripts/deploy.py --adopt-pid <current-service-pid>`. Later deployments use `scripts/deploy.py`. `bin/mcp-privacy-proxy` starts the selected release manually. A different process at the recorded PID is never stopped.
+The first migration uses `scripts/deploy.py --adopt-pid <current-service-pid>`. Later deployments use `scripts/deploy.py`. `bin/openmaskit` starts the selected release manually. A different process at the recorded PID is never stopped.
 
 ## Local state and credentials
 

@@ -1,7 +1,7 @@
-# Modified in the unofficial fork: distinct distribution and reusable privacy checks.
+# Modified in the unofficial fork: reusable privacy checks and maintained privacy fixes.
 [project]
-name = "mcp-privacy-proxy"
-version = "0.6.1+privacy.5"
+name = "openmaskit"
+version = "0.6.1+privacy.6"
 description = "Drop-in MCP proxy that keeps your secrets out of the context window"
 readme = "README.md"
 authors = [
@@ -41,7 +41,7 @@ Repository = "https://github.com/ricardomartins-gravitee/openmaskit"
 Issues = "https://github.com/ricardomartins-gravitee/openmaskit/issues"
 
 [project.scripts]
-mcp-privacy-proxy = "openmaskit.__main__:main"
+openmaskit = "openmaskit.__main__:main"
 
 [build-system]
 requires = ["hatchling"]

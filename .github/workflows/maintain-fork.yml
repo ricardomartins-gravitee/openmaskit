@@ -6,7 +6,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: maintain-mcp-privacy-fork
+  group: maintain-openmaskit-fork
   cancel-in-progress: false
 jobs:
   update:
@@ -20,7 +20,7 @@ jobs:
       - uses: astral-sh/setup-uv@v4
       - name: Configure maintenance identity
         run: |
-          git config user.name 'MCP Privacy Proxy maintenance'
+          git config user.name 'OpenMaskit maintenance'
           git config user.email 'maintenance@localhost'
       - name: Set up the locked environment
         run: uv sync --frozen --python 3.12

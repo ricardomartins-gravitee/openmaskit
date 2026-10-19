@@ -1,10 +1,10 @@
-# Maintaining MCP Privacy Proxy
+# Maintaining OpenMaskit
 
 This repository is an unofficial maintained fork of MaskitMCP/openmaskit.
 
 - Preserve sender/recipient masking, empty-string handling, size-limit withholding and startup rule restoration.
 - Keep all actual mailbox data, credentials, logs, databases, runtime environments and backups under the ignored `.runtime/` directory or the existing user application data directory. Never commit them or upload them.
-- Keep `LICENSE`, `NOTICE` and upstream attribution. Use the MCP Privacy Proxy name and distinct icon for this modified build.
+- Keep `LICENSE`, `NOTICE` and upstream attribution. The user explicitly requested restoring the original OpenMaskit name and icon on 20 October 2026. Keep that name in the UI, package, CLI, documentation and maintenance checks; do not rename the project or app without an explicit user request.
 - The user explicitly authorized publishing these privacy fixes and regression tests in a public native GitHub fork on 19 October 2026. GitHub-hosted upstream synchronization, maintenance commits, pushes and validation are authorized. Sending email and changing access permissions beyond this publication are not authorized.
 - Scheduled maintenance runs only on GitHub. Do not create or enable local scheduled jobs, recurring Codex tasks or automatic local installations. The local maintenance automation was deleted at the user's request on 19 October 2026. Local installation and deployment are manual and require a user request.
 - Use `scripts/maintain.py` in the GitHub maintenance workflow, which publishes only after successful validation. It prepares candidates separately and runs the complete non-browser suite plus a real synthetic startup/MCP check before advancing the maintained branch. The `--deploy` option is for a user-requested local installation only.

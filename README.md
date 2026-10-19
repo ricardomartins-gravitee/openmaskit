@@ -1,4 +1,4 @@
-# MCP Privacy Proxy
+# OpenMaskit
 
 Unofficial maintained fork of [OpenMaskit](https://github.com/MaskitMCP/openmaskit). Not affiliated with or endorsed by its maintainers. See [FORK.md](FORK.md) for the fixes, update process and recovery.
 
@@ -12,10 +12,10 @@ Reusable analyzer-backed text checks are available through **Analyzers** and eac
 git clone https://github.com/ricardomartins-gravitee/openmaskit.git
 cd openmaskit
 uv sync --frozen --python 3.12
-uv run --frozen mcp-privacy-proxy
+uv run --frozen openmaskit
 ```
 
-Existing `openmaskit.yaml`, environment variables and `~/.openmaskit/` storage remain compatible. The command and Python distribution are named `mcp-privacy-proxy`; the Python module remains `openmaskit`.
+Existing `openmaskit.yaml`, environment variables and `~/.openmaskit/` storage remain compatible. The dashboard, command, Python distribution and module retain the original OpenMaskit naming.
 
 ## Upstream reference documentation
 
