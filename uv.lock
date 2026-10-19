@@ -733,7 +733,7 @@ cli = [
 
 [[package]]
 name = "mcp-privacy-proxy"
-version = "0.6.1+privacy.3"
+version = "0.6.1+privacy.4"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },

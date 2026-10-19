@@ -170,3 +170,51 @@ def test_real_presidio_mcp_restart_alias_roundtrip_and_outage(real_presidio, tmp
         assert 'structuredContent' not in result
     finally:
         _terminate(proc)
+
+
+def test_privacy_dialog_controls_match_theme(dashboard_page, tmp_path):
+    """Dropdowns and preview textareas must not fall back to browser defaults."""
+    page = dashboard_page
+    page.goto(E2E_BASE_URL + '/privacy')
+    panel(page).get_by_role('button', name='Add Shared Analyzer').click()
+
+    def assert_controls():
+        reference = modal(page).get_by_role('textbox', name='Name', exact=True)
+        theme = reference.evaluate('(el) => { const s = getComputedStyle(el); return {background: s.backgroundColor, color: s.color, radius: s.borderRadius}; }')
+        controls = modal(page).locator('select:visible, textarea:visible')
+        assert controls.count() > 0
+        for control in controls.all():
+            style = control.evaluate('(el) => { const s = getComputedStyle(el); return {background: s.backgroundColor, color: s.color, radius: s.borderRadius, appearance: s.appearance, image: s.backgroundImage}; }')
+            assert {k: style[k] for k in theme} == theme
+            assert control.bounding_box()['height'] >= 34
+            if control.evaluate('(el) => el.tagName') == 'SELECT':
+                assert style['appearance'] == 'none'
+                assert style['image'] != 'none'
+                control.focus()
+                expect(control).to_have_css('border-color', 'rgb(88, 166, 255)')
+    assert_controls()
+    kind = modal(page).get_by_label(re.compile(r'^Type'))
+    kind.select_option('http_spans')
+    expect(kind).to_have_value('http_spans')
+    kind.select_option('presidio')
+    modal(page).get_by_role('textbox', name='Name', exact=True).fill('Synthetic analyzer')
+    modal(page).get_by_label('Local service URL').fill('http://127.0.0.1:5002')
+    modal(page).screenshot(path=str(tmp_path / 'analyzer-dialog.png'))
+    modal(page).get_by_role('button', name='Save', exact=True).click()
+    expect(modal(page)).not_to_be_visible()
+    for scope in ('shared', 'server'):
+        if scope == 'server':
+            install_stub_via_api('mail')
+            page.goto(E2E_BASE_URL + '/targets/mail/tools')
+            panel(page).get_by_role('button', name='Add Server Check', exact=True).click()
+        else:
+            panel(page).get_by_role('button', name='Add Shared Check', exact=True).click()
+        modal(page).get_by_text('Preview', exact=True).click()
+        assert_controls()
+        action = modal(page).get_by_label(re.compile(r'^Action'))
+        action.select_option('redact')
+        expect(action).to_have_value('redact')
+        page.set_viewport_size({'width': 390, 'height': 844})
+        assert_controls()
+        assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
+        modal(page).get_by_role('button', name='Cancel', exact=True).click()
