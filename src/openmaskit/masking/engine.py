@@ -82,6 +82,20 @@ class MaskingEngine:
     def alias_cache(self) -> dict[str, str]:
         return self._alias_cache
 
+    def alias_spans(self, text: str) -> list[tuple[int, int]]:
+        """Find existing alias tokens using the cached multi-pattern matcher."""
+        automaton = self._ensure_automaton()
+        if automaton is None:
+            return []
+        spans = []
+        for end_index, (alias, _) in automaton.iter_long(text):
+            start, end = end_index + 1 - len(alias), end_index + 1
+            before, after = text[start - 1:start] if start else "", text[end:end + 1]
+            if (before and re.match(r"[A-Za-z0-9_]", before)) or (after and re.match(r"[A-Za-z0-9_]", after)):
+                continue
+            spans.append((start, end))
+        return spans
+
     @property
     def has_pending_writes(self) -> bool:
         return bool(self._pending_writes)

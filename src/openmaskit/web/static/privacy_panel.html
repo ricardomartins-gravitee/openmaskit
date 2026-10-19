@@ -1,0 +1,116 @@
+<!-- Reused by the installation-wide library and each server page. -->
+<section class="panel privacy-panel" x-data="privacyChecksPanel()" x-init="init()">
+    <div class="panel-header">
+        <h2 x-text="scope ? 'Privacy Checks' : 'Shared Checks'"></h2>
+        <button class="btn-primary" @click="openCheck()" :disabled="loading || !providers.length || busy"
+                x-text="scope ? 'Add Server Check' : 'Add Shared Check'"></button>
+    </div>
+    <p class="muted" x-show="!scope">Register an analyzer once, define a check, then use it on the servers you choose.</p>
+    <p class="muted" x-show="scope">Use shared checks or create checks only for this server. <a href="/privacy">Open shared library</a></p>
+    <p x-show="loading" class="muted">Loading checks…</p>
+    <p x-show="error" role="alert" class="privacy-error" x-text="error"></p>
+    <p x-show="notice" role="status" class="muted" x-text="notice"></p>
+
+    <form x-show="scope && reusableChecks.length" class="form-row" @submit.prevent="attach()">
+        <label class="modal-field">Shared check
+            <select x-model="selectedCheck" required><option value="">Choose a shared check</option>
+                <template x-for="item in reusableChecks" :key="item.id"><option :value="item.id" x-text="item.name"></option></template>
+            </select>
+        </label>
+        <label class="modal-field">Tools
+            <select x-model="selectedTool"><option value="*">All tools on this server</option>
+                <template x-for="tool in tools" :key="tool.name"><option :value="tool.name" x-text="tool.name"></option></template>
+            </select>
+        </label>
+        <button class="btn-primary" :disabled="busy || !selectedCheck">Use Check</button>
+    </form>
+
+    <table x-show="scope && assignments.length">
+        <thead><tr><th>Check</th><th>Scope</th><th>Tools</th><th>Status</th><th></th></tr></thead>
+        <tbody><template x-for="binding in assignments" :key="binding.id"><tr>
+            <td x-text="check(binding.check_id)?.name || 'Unavailable check'"></td>
+            <td x-text="check(binding.check_id)?.scope === null ? 'Shared' : 'Only this server'"></td>
+            <td x-text="binding.tool_name === '*' ? 'All tools' : binding.tool_name"></td>
+            <td x-text="binding.active ? 'Enabled' : 'Paused'"></td>
+            <td><button @click="toggle(binding)" :disabled="busy" x-text="binding.active ? 'Pause' : 'Enable'"></button>
+                <button class="btn-danger" @click="detach(binding)" :disabled="busy">Remove</button></td>
+        </tr></template></tbody>
+    </table>
+    <p x-show="scope && !assignments.length && !loading" class="muted">No privacy checks enabled on this server.</p>
+
+    <h3 class="subsection-title" x-show="scope && ownChecks.length">Server Check Definitions</h3>
+    <table x-show="ownChecks.length">
+        <thead><tr><th>Name</th><th>Analyzer</th><th>Action</th><th x-show="!scope">Used by</th><th></th></tr></thead>
+        <tbody><template x-for="item in ownChecks" :key="item.id"><tr>
+            <td x-text="item.name"></td><td x-text="providerName(item.provider_id)"></td>
+            <td x-text="{mask: 'Reversible alias', redact: 'Redact', block: 'Block response'}[item.action]"></td>
+            <td x-show="!scope" x-text="item.used_by + ' servers'"></td>
+            <td><button @click="openCheck(item)" :disabled="busy">Edit</button>
+                <button x-show="scope" @click="selectedCheck = item.id; attach()" :disabled="busy">Use</button>
+                <button class="btn-danger" @click="remove('checks', item)" :disabled="busy">Delete</button></td>
+        </tr></template></tbody>
+    </table>
+    <p x-show="!scope && !ownChecks.length && !loading" class="muted">No shared checks configured.</p>
+
+    <details :open="!scope" class="privacy-analyzers">
+        <summary>Analyzers</summary>
+        <p class="muted">Connect a locally running Presidio or compatible analyzer. Registering it does not install software.</p>
+        <button @click="openProvider()" :disabled="busy" x-text="scope ? 'Add Server Analyzer' : 'Add Shared Analyzer'"></button>
+        <table x-show="providers.length">
+            <thead><tr><th>Name</th><th>Type</th><th>Scope</th><th>Connection</th><th></th></tr></thead>
+            <tbody><template x-for="provider in providers" :key="provider.id"><tr>
+                <td x-text="provider.name"></td><td x-text="provider.adapter === 'presidio' ? 'Presidio' : 'Compatible analyzer'"></td>
+                <td x-text="scopeLabel(provider)"></td><td x-text="health[provider.id] || 'Not checked'"></td>
+                <td><button @click="connection(provider)" :disabled="busy">Check Connection</button>
+                    <button x-show="provider.scope === scope" @click="openProvider(provider)" :disabled="busy">Edit</button>
+                    <button x-show="provider.scope === scope" class="btn-danger" @click="remove('providers', provider)" :disabled="busy">Delete</button></td>
+            </tr></template></tbody>
+        </table>
+    </details>
+    <p class="muted privacy-note">These checks inspect text, including structured fields and message bodies. Images, audio and binary attachments are not inspected. If a required analyzer fails, the response is withheld.</p>
+
+    <div x-show="modal" x-cloak class="modal-backdrop" @keydown.escape.window="modal = ''">
+        <div class="modal modal-target" @click.outside="modal = ''">
+            <div class="modal-header-bar">
+                <h3 x-text="modal === 'provider' ? (editing ? 'Edit Analyzer' : 'Add Analyzer') : (editing ? 'Edit Check' : (scope ? 'Add Server Check' : 'Add Shared Check'))"></h3>
+                <button class="modal-close-btn" @click="modal = ''" aria-label="Close privacy check settings">×</button>
+            </div>
+            <form @submit.prevent="modal === 'provider' ? saveProvider() : saveCheck()">
+                <div class="modal-body">
+                    <p class="muted" x-text="scope ? 'Visible only within this server.' : 'Available for reuse across your MCP servers.'"></p>
+                    <p x-show="editing && !scope && modal === 'check'" class="muted">Changes apply to every server using this shared check.</p>
+                    <p x-show="error" role="alert" class="privacy-error" x-text="error"></p>
+                    <div x-show="modal === 'provider'">
+                        <label class="modal-field">Name<input x-model="providerForm.name" :required="modal === 'provider'" maxlength="120"></label>
+                        <label class="modal-field">Type<select x-model="providerForm.adapter"><option value="presidio">Presidio</option><option value="http_spans">Compatible analyzer</option></select></label>
+                        <label class="modal-field">Local service URL<input x-model="providerForm.endpoint" :required="modal === 'provider'" placeholder="http://127.0.0.1:5002"></label>
+                        <p class="muted" x-show="providerForm.adapter === 'http_spans'">Use the exact endpoint of a service supporting the documented findings format.</p>
+                    </div>
+                    <div x-show="modal === 'check'">
+                        <label class="modal-field">Name<input x-model="checkForm.name" :required="modal === 'check'" maxlength="120" placeholder="People in message bodies"></label>
+                        <label class="modal-field">Analyzer<select x-model="checkForm.provider_id" :required="modal === 'check'">
+                            <option value="">Choose an analyzer</option><template x-for="provider in providers" :key="provider.id"><option :value="provider.id" x-text="provider.name + ' (' + scopeLabel(provider) + ')'"></option></template>
+                        </select></label>
+                        <label class="modal-field">Detect<input x-model="entitiesText" :required="modal === 'check'" placeholder="PERSON, EMAIL_ADDRESS, PHONE_NUMBER"></label>
+                        <label class="modal-field">Language<input x-model="checkForm.language" placeholder="en" :required="modal === 'check'"></label>
+                        <label class="modal-field">Minimum confidence<input type="number" min="0" max="1" step="0.05" x-model="checkForm.threshold"></label>
+                        <label class="modal-field">Action<select x-model="checkForm.action"><option value="mask">Replace with reversible aliases</option><option value="redact">Redact matches</option><option value="block">Block response when detected</option></select></label>
+                        <label class="modal-field">Structured fields (optional)<input x-model="pathsText" placeholder="messages.body, subject"></label>
+                        <p class="muted">Leave empty to scan all text values. Field paths restrict structured responses; plain text results are always scanned.</p>
+                        <label class="modal-field" x-show="scope && !editing">Tools<select x-model="selectedTool"><option value="*">All tools on this server</option>
+                            <template x-for="tool in tools" :key="tool.name"><option :value="tool.name" x-text="tool.name"></option></template>
+                        </select></label>
+                        <details><summary>Preview</summary>
+                            <label class="modal-field">Sample text<textarea x-model="previewText" rows="3" maxlength="100000"></textarea></label>
+                            <button type="button" @click="preview()" :disabled="busy || !checkForm.provider_id">Preview Check</button>
+                            <pre class="privacy-preview" x-show="previewResult" x-text="previewResult"></pre>
+                            <p class="muted">Preview uses temporary aliases and does not save sample text or mappings.</p>
+                        </details>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" @click="modal = ''" :disabled="busy">Cancel</button>
+                    <button type="submit" class="btn-primary" :disabled="busy" x-text="busy ? 'Saving…' : 'Save'"></button></div>
+            </form>
+        </div>
+    </div>
+</section>

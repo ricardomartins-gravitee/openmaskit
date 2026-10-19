@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+# Modified in the unofficial fork: include the existing-style privacy-check panel.
+
 from pathlib import Path
 from uuid import uuid4
 
@@ -27,7 +29,8 @@ async def targets_page(request: Request):
 
 
 async def tools_page(request: Request):
-    return FileResponse(STATIC_DIR / "tools.html")
+    from openmaskit.web.routes.privacy import page_with_privacy_checks
+    return page_with_privacy_checks("tools.html")
 
 
 async def tool_detail_page(request: Request):

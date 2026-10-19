@@ -4,6 +4,8 @@ Unofficial maintained fork of [OpenMaskit](https://github.com/MaskitMCP/openmask
 
 The privacy fixes apply to every configured MCP server. Thunderbird is one use case. This fork preserves empty fields, withholds oversized responses that require field masking, and reloads saved rules at startup.
 
+Reusable analyzer-backed text checks are available through **Checks** and each server's **Privacy Checks** panel. Register a local Presidio or compatible analyzer once, reuse shared checks where needed, or define checks only for one server. See [privacy-checks.md](docs/privacy-checks.md) for scope, setup and limits.
+
 ## Run this fork
 
 ```sh

@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/static/tutorial.css">
     <script src="/static/shared.js"></script>
     <script src="/static/tutorial.js"></script>
+    <script src="/static/privacy_checks.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 </head>
 <body>
@@ -22,6 +23,7 @@
         <nav>
             <a href="/">Servers</a>
             <a href="/marketplace">Marketplace</a>
+            <a href="/privacy">Checks</a>
             <span class="nav-sep">/</span>
             <span class="nav-current" x-text="targetName"></span>
         </nav>
@@ -87,6 +89,8 @@
                 </template>
             </div>
         </section>
+
+        <!-- PRIVACY_CHECKS_PANEL -->
 
         <section class="panel">
             <h2>Global Rules (apply to all tools)</h2>

@@ -9,6 +9,7 @@ An unofficial maintained fork of [OpenMaskit](https://github.com/MaskitMCP/openm
 - Saved rules reload for database-managed servers during startup.
 - The distribution and command identify this fork as `mcp-privacy-proxy`, with a distinct dashboard name and icon.
 - Dependencies are locked, including the existing MCP major-version compatibility constraint.
+- Reusable analyzer-backed text checks support shared definitions and server-only definitions, with local Presidio and compatible HTTP adapters. See [privacy-checks.md](docs/privacy-checks.md).
 
 The parsing limit is still a resource guard. Names in message bodies, subjects, previews, raw source and non-text media still need separate protection.
 
