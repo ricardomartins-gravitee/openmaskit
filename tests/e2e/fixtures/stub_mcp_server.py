@@ -15,21 +15,24 @@ custom-target tests. Uses the ``mcp`` runtime dep that's already in
 
 from __future__ import annotations
 
+import json
 from mcp.server.fastmcp import FastMCP
+from mcp.types import CallToolResult, TextContent
 
 mcp = FastMCP("stub")
 
 
 @mcp.tool()
-def lookup_user(name: str) -> dict:
+def lookup_user(name: str) -> CallToolResult:
     """Return a fixed user record. The ``name`` argument is echoed back."""
-    return {
+    data = {
         "id": 1,
         "name": name,
         "email": "alice@example.com",
         "host": "prod-db.internal.net",
         "phone_number": "+15551234567",
     }
+    return CallToolResult(content=[TextContent(type="text", text=json.dumps(data))], structuredContent=data)
 
 
 @mcp.tool()

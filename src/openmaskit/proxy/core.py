@@ -583,8 +583,8 @@ def _intercept_response(msg: SessionMessage, target: TargetState, prepared_resul
         # Extract original response preview BEFORE masking
         original_preview = None
         if result and isinstance(result, dict):
-            for block in result.get("content", []):
-                if isinstance(block, dict) and block.get("type") == "text" and block.get("text"):
+            for block in (result.get("content") or []) if isinstance(result.get("content", []), list) else []:
+                if isinstance(block, dict) and block.get("type") == "text" and isinstance(block.get("text"), str) and block["text"]:
                     original_preview = _truncate_preview(block["text"])
                     break
 

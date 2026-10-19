@@ -29,10 +29,64 @@ jobs:
 
       - name: Run tests
         # Skip the e2e suite — it lives in its own dependency group (pytest-playwright,
-        # Chromium, Postgres URI) and is intended to run locally / on a manual workflow.
+        # Chromium, Postgres URI) and runs in the acceptance job below.
         # Without --ignore, pytest still tries to import tests/e2e/* during collection
         # and fails on the playwright import even though the e2e marker would deselect them.
         run: uv run pytest tests/ -v --ignore=tests/e2e
 
       - name: Check privacy across real startup and MCP calls
         run: uv run --frozen python scripts/privacy_smoke.py
+
+  acceptance:
+    name: Browser and real Presidio acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: acceptance
+          POSTGRES_PASSWORD: synthetic-test-only
+          POSTGRES_DB: acceptance
+        ports:
+          - 55439:5432
+        options: >-
+          --health-cmd "pg_isready -U acceptance"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - name: Install test dependencies and browser
+        run: |
+          uv sync --frozen --group e2e --python 3.12
+          uv run --frozen --group e2e playwright install --with-deps chromium
+          uv venv --python 3.12 .runtime/presidio-test
+          uv pip install --python .runtime/presidio-test/bin/python -r tests/e2e/requirements-presidio.txt
+      - name: Prepare synthetic PostgreSQL fixture
+        run: |
+          docker pull crystaldba/postgres-mcp
+          docker exec -i ${{ job.services.postgres.id }} psql -U acceptance -d acceptance <<'SQL'
+          CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT, phone_number TEXT);
+          INSERT INTO users VALUES
+            (1, 'John Krasinsky', 'user1@yahoo.com', NULL),
+            (2, 'John Doe', 'john.doe@gmail.com', '+31611119987');
+          SQL
+      - name: Run browser and real-model privacy acceptance
+        env:
+          OM_E2E_PG_URI: postgresql://acceptance:synthetic-test-only@172.17.0.1:55439/acceptance
+          PRESIDIO_TEST_PYTHON: ${{ github.workspace }}/.runtime/presidio-test/bin/python
+        run: >-
+          uv run --frozen --group e2e pytest tests/e2e -m e2e -v
+          --basetemp=.runtime/acceptance
+          --junitxml=.runtime/acceptance.xml
+          --screenshot only-on-failure --output .runtime/browser-results
+      - name: Save acceptance results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: privacy-acceptance
+          path: |
+            .runtime/acceptance.xml
+            .runtime/browser-results/
+            .runtime/acceptance/**/privacy-mobile.png
+          retention-days: 14

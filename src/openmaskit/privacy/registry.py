@@ -161,6 +161,8 @@ class PrivacyChecks:
             return withheld()
 
     async def scan_result(self, client, provider, check, result, mint, known_alias_spans, budget):
+        visited = 0
+        selected_paths = [tuple(path.split(".")) for path in check.field_paths]
         async def scan(text, path):
             if not text:
                 return text
@@ -192,11 +194,15 @@ class PrivacyChecks:
                 text = text[:finding.start] + alias + text[finding.end:]
             return text
 
-        async def walk(value, path="", depth=0):
+        async def walk(value, path=(), depth=0):
+            nonlocal visited
+            visited += 1
+            if visited > 10_000:
+                raise CheckFailure("Response exceeds traversal budget")
             if depth > 40:
                 raise CheckFailure("Response nesting exceeds limit")
             if isinstance(value, dict):
-                return {key: await walk(child, (path + "." if path else "") + key, depth + 1)
+                return {key: await walk(child, path + (str(key),), depth + 1)
                         for key, child in value.items()}
             if isinstance(value, list):
                 return [await walk(child, path, depth + 1) for child in value]
@@ -206,25 +212,43 @@ class PrivacyChecks:
                 parsed = try_parse_structured(value) if value.lstrip().startswith(("{", "[", "(")) else None
                 if parsed:
                     return serialize(await walk(parsed.data, path, depth + 1), parsed.format)
-                if check.field_paths and not any(path == p or path.startswith(p + ".") for p in check.field_paths):
+                if selected_paths and not any(path[:len(p)] == p for p in selected_paths):
                     return value
-                return await scan(value, path)
-            return value
+                return await scan(value, ".".join(path))
+            if value is None or type(value) in (int, float, bool):
+                return value
+            # Python repr can contain sets/bytes which are not JSON text leaves.
+            # Do not silently release values that the walker cannot inspect.
+            raise CheckFailure("Unsupported structured value")
 
+        async def text_result(text):
+            if not isinstance(text, str):
+                raise CheckFailure("Invalid text result")
+            parsed = try_parse_structured(text) if len(text) <= MAX_TEXT else None
+            return serialize(await walk(parsed.data), parsed.format) if parsed else await scan(text, "text")
+
+        if not isinstance(result, dict) or not isinstance(result.get("content", []), list):
+            raise CheckFailure("Invalid tool result")
+        if len(result.get("content", [])) > 10_000:
+            raise CheckFailure("Response exceeds content budget")
         if "structuredContent" in result:
             result["structuredContent"] = await walk(result["structuredContent"])
         for block in result.get("content", []):
             if not isinstance(block, dict):
-                continue
-            if block.get("type") == "text" and isinstance(block.get("text"), str):
-                text = block["text"]
-                parsed = try_parse_structured(text) if len(text) <= MAX_TEXT else None
+                raise CheckFailure("Invalid content block")
+            if block.get("type") == "text":
                 # Field selection restricts structured values. Plain text is always scanned.
-                block["text"] = serialize(await walk(parsed.data), parsed.format) if parsed else await scan(text, "text")
-            elif block.get("type") == "resource" and isinstance(block.get("resource"), dict):
-                resource = block["resource"]
-                if isinstance(resource.get("text"), str):
-                    resource["text"] = await scan(resource["text"], "resource.text")
+                block["text"] = await text_result(block.get("text"))
+            elif block.get("type") == "resource":
+                resource = block.get("resource")
+                if not isinstance(resource, dict):
+                    raise CheckFailure("Invalid embedded resource")
+                if "text" in resource:
+                    resource["text"] = await text_result(resource["text"])
+                elif "blob" not in resource:
+                    raise CheckFailure("Invalid embedded resource")
+            elif block.get("type") not in {"image", "audio", "resource_link"}:
+                raise CheckFailure("Unsupported content block")
         return result
 
     async def preview(self, scope, body):

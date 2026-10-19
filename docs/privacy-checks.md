@@ -44,7 +44,7 @@ Existing rules and mappers run first. Enabled checks then inspect text content, 
 
 Returned findings are validated for bounds, scores and entity types. Overlapping accepted spans are combined so a shorter detection cannot expose the remainder of a longer accepted detection. Existing aliases are preserved; a detection crossing an alias boundary withholds the response.
 
-The initial bounds are 100,000 characters per text, 256 analyzed strings and 2,000,000 characters per response across checks, 40 nested containers, 1 MiB per analyzer response, a five-second HTTP timeout and a fifteen-second overall response-check deadline. Required check failures, invalid findings, exceeded limits and blocking matches return a new error result containing no original content. No partial result is released.
+The initial bounds are 100,000 characters per text, 256 analyzed strings and 2,000,000 characters per response across checks, 40 nested containers, 10,000 structured nodes per check and 10,000 content blocks, 1 MiB per analyzer response, a five-second HTTP timeout and a fifteen-second overall response-check deadline. Required check failures, invalid findings, exceeded limits and blocking matches return a new error result containing no original content. No partial result is released.
 
 Preview uses transient aliases and does not write samples or alias mappings to SQLite. A failed preview does not mean the text is safe. Detection quality depends on the configured models, language, entity types and confidence threshold; false positives and missed entities remain possible.
 
@@ -52,4 +52,4 @@ Images, audio, binary attachments, resource URIs, protocol metadata, tool schema
 
 ## Delivery
 
-This feature is prepared on a separate branch for review. It is not installed into the running service. Local installation remains manual, and there are no local scheduled jobs. GitHub alone maintains the source fork on its existing schedule. Browser checks and feature regression tests have not been added or run for this change.
+Local installation remains manual, and there are no local scheduled jobs. GitHub alone maintains the source fork on its existing schedule. Regression tests cover scope, persistence, aliases, Unicode and overlapping spans, response formats, invalid settings, analyzer failures and limits. Browser acceptance uses real Presidio, its English spaCy model, and synthetic MCP/database data; see [the acceptance instructions](../tests/e2e/README.md). Text detection is probabilistic: passing these tests does not guarantee that a model will recognize every real name. Unsupported structured value types and malformed or unknown content blocks are withheld when a check is required.
