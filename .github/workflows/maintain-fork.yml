@@ -1,4 +1,4 @@
-name: Maintain private fork
+name: Maintain MCP privacy fork
 on:
   schedule:
     - cron: '17 */6 * * *'
@@ -6,7 +6,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: maintain-private-fork
+  group: maintain-mcp-privacy-fork
   cancel-in-progress: false
 jobs:
   update:
