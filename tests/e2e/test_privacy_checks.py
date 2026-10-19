@@ -25,23 +25,30 @@ def modal(page):
 
 
 def create_provider(page, endpoint, name='Local Presidio'):
-    panel(page).get_by_role('button', name='Add Shared Analyzer').click()
+    panel(page).get_by_role('button', name='Add Analyzer').click()
     modal(page).get_by_role('textbox', name='Name', exact=True).fill(name)
     modal(page).get_by_label('Local service URL').fill(endpoint)
     modal(page).get_by_role('button', name='Save', exact=True).click()
     expect(panel(page).get_by_role('status')).to_have_text('Analyzer saved')
 
 
-def create_check(page, name, local=False):
-    panel(page).get_by_role('button', name='Add Server Check' if local else 'Add Shared Check', exact=True).click()
+def analyzer_card(page, name):
+    return panel(page).locator('.privacy-analyzer-card').filter(has=page.get_by_role('heading', name=name, exact=True))
+
+
+def create_check(page, name, local=False, analyzer='Local Presidio'):
+    analyzer_card(page, analyzer).get_by_role('button', name='Create Server-only Check' if local else 'Add Check', exact=True).click()
+    expect(modal(page).get_by_role('textbox', name='Analyzer', exact=True)).to_have_value(analyzer)
+    expect(modal(page).get_by_role('textbox', name='Analyzer', exact=True)).to_have_attribute('readonly', '')
     modal(page).get_by_role('textbox', name='Name', exact=True).fill(name)
     # Use the real preview before saving; no synthetic aliases should persist.
-    modal(page).get_by_text('Preview', exact=True).click()
+    if not modal(page).get_by_label('Sample text').is_visible():
+        modal(page).get_by_text('Preview', exact=True).click()
     modal(page).get_by_label('Sample text').fill(NAME + ' called yesterday.')
     modal(page).get_by_role('button', name='Preview Check', exact=True).click()
     expect(modal(page).locator('.privacy-preview')).to_contain_text('person_1')
     expect(modal(page).locator('.privacy-preview')).not_to_contain_text(NAME)
-    modal(page).get_by_role('button', name='Save', exact=True).click()
+    modal(page).get_by_role('button', name='Save and Enable' if local else 'Save', exact=True).click()
     expect(modal(page)).not_to_be_visible()
 
 
@@ -54,45 +61,47 @@ def test_shared_and_local_dashboard_lifecycle(dashboard_page, real_presidio, tmp
     page.goto(E2E_BASE_URL + '/privacy')
     create_provider(page, real_presidio[0])
     panel(page).get_by_role('button', name='Check Connection').click()
-    expect(panel(page).get_by_role('cell', name='Connected', exact=True)).to_be_visible()
+    expect(analyzer_card(page, 'Local Presidio').locator('.privacy-connection')).to_have_text('Connected')
     create_check(page, 'People')
     for target in ('mail', 'calendar'):
         page.goto(E2E_BASE_URL + f'/targets/{target}/tools')
-        panel(page).get_by_label(re.compile(r'^Shared check')).select_option(label='People')
-        panel(page).get_by_role('button', name='Use Check', exact=True).click()
+        panel(page).get_by_role('button', name='Add Check', exact=True).click()
+        modal(page).get_by_role('combobox', name=re.compile(r'^Check')).select_option(label='People (Shared)')
+        modal(page).get_by_role('button', name='Save', exact=True).click()
+        expect(modal(page)).not_to_be_visible()
         expect(panel(page).get_by_role('cell', name='Enabled', exact=True)).to_be_visible()
     panel(page).get_by_role('button', name='Pause', exact=True).click()
     expect(panel(page).get_by_role('cell', name='Paused', exact=True)).to_be_visible()
     page.goto(E2E_BASE_URL + '/targets/mail/tools')
     expect(panel(page).get_by_role('cell', name='Enabled', exact=True)).to_be_visible()
     create_check(page, 'Mail only', local=True)
-    expect(panel(page).get_by_role('cell', name='Only this server', exact=True)).to_be_visible()
+    expect(panel(page).locator('.privacy-assignments').get_by_role('cell', name='Only this server', exact=True)).to_be_visible()
     with api_client() as client:
         assert 'Mail only' not in client.get('/api/privacy').text
         assert 'Mail only' not in client.get('/api/targets/calendar/privacy').text
         # No alias mappings created by previews.
         assert client.get('/api/targets/mail/mappings').json()['mappings'] == []
     # Local edit and deletion, including the meaningful in-use refusal.
-    row = panel(page).get_by_role('row').filter(has=page.get_by_role('cell', name='Mail only', exact=True)).last
-    row.get_by_role('button', name='Edit', exact=True).click()
+    row = panel(page).locator('.privacy-check-definitions').get_by_role('row').filter(has=page.get_by_role('cell', name='Mail only', exact=True))
+    row.get_by_role('button', name='Edit Check', exact=True).click()
     modal(page).get_by_role('textbox', name='Name', exact=True).fill('Mail only revised')
     modal(page).get_by_role('button', name='Save', exact=True).click()
     expect(modal(page)).not_to_be_visible()
     page.on('dialog', lambda dialog: dialog.accept())
-    row = panel(page).get_by_role('row').filter(has=page.get_by_role('cell', name='Mail only revised', exact=True)).last
-    row.get_by_role('button', name='Delete', exact=True).click()
+    row = panel(page).locator('.privacy-check-definitions').get_by_role('row').filter(has=page.get_by_role('cell', name='Mail only revised', exact=True))
+    row.get_by_role('button', name='Delete Check', exact=True).click()
     expect(panel(page).get_by_role('alert').first).to_contain_text('Remove this check')
-    binding = panel(page).get_by_role('row').filter(has=page.get_by_role('cell', name='Mail only revised', exact=True)).first
+    binding = panel(page).locator('.privacy-assignments').get_by_role('row').filter(has=page.get_by_role('cell', name='Mail only revised', exact=True))
     binding.get_by_role('button', name='Remove', exact=True).click()
     expect(panel(page).get_by_role('status')).to_have_text('Check removed from this server')
-    row.get_by_role('button', name='Delete', exact=True).click()
+    row.get_by_role('button', name='Delete Check', exact=True).click()
     expect(panel(page).get_by_role('cell', name='Mail only revised', exact=True)).to_have_count(0)
     page.set_viewport_size({'width': 390, 'height': 844})
     expect(panel(page).get_by_role('heading', name='Privacy Checks', exact=True)).to_be_visible()
     assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
     # Library links and secondary controls use the dashboard theme.
     expect(panel(page).get_by_role('button', name='Pause', exact=True)).to_have_class(re.compile(r'\bbtn-small\b'))
-    link = panel(page).get_by_role('link', name='Open shared library')
+    link = panel(page).get_by_role('link', name='Open analyzer library')
     assert link.evaluate('(el) => getComputedStyle(el).color') == 'rgb(88, 166, 255)'
     page.evaluate('window.scrollTo(0, 0)')
     page.screenshot(path=str(tmp_path / 'privacy-mobile.png'), full_page=True)
@@ -176,10 +185,10 @@ def test_privacy_dialog_controls_match_theme(dashboard_page, tmp_path):
     """Dropdowns and preview textareas must not fall back to browser defaults."""
     page = dashboard_page
     page.goto(E2E_BASE_URL + '/privacy')
-    panel(page).get_by_role('button', name='Add Shared Analyzer').click()
+    panel(page).get_by_role('button', name='Add Analyzer').click()
 
     def assert_controls():
-        reference = modal(page).get_by_role('textbox', name='Name', exact=True)
+        reference = modal(page).locator('input').first
         theme = reference.evaluate('(el) => { const s = getComputedStyle(el); return {background: s.backgroundColor, color: s.color, radius: s.borderRadius}; }')
         controls = modal(page).locator('select:visible, textarea:visible')
         assert controls.count() > 0
@@ -206,9 +215,9 @@ def test_privacy_dialog_controls_match_theme(dashboard_page, tmp_path):
         if scope == 'server':
             install_stub_via_api('mail')
             page.goto(E2E_BASE_URL + '/targets/mail/tools')
-            panel(page).get_by_role('button', name='Add Server Check', exact=True).click()
+            analyzer_card(page, 'Synthetic analyzer').get_by_role('button', name='Create Server-only Check', exact=True).click()
         else:
-            panel(page).get_by_role('button', name='Add Shared Check', exact=True).click()
+            analyzer_card(page, 'Synthetic analyzer').get_by_role('button', name='Add Check', exact=True).click()
         modal(page).get_by_text('Preview', exact=True).click()
         assert_controls()
         action = modal(page).get_by_label(re.compile(r'^Action'))
@@ -218,3 +227,122 @@ def test_privacy_dialog_controls_match_theme(dashboard_page, tmp_path):
         assert_controls()
         assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
         modal(page).get_by_role('button', name='Cancel', exact=True).click()
+
+
+def test_analyzer_ownership_and_per_server_tool_assignment(dashboard_page, real_presidio, tmp_path):
+    page = dashboard_page
+    errors = []
+    page.on('pageerror', lambda error: errors.append(str(error)))
+    install_stub_via_api('mail')
+    install_stub_via_api('calendar')
+    page.goto(E2E_BASE_URL + '/privacy')
+    create_provider(page, real_presidio[0], 'Engine A')
+    create_provider(page, real_presidio[0], 'Engine B')
+    create_check(page, 'A people', analyzer='Engine A')
+    create_check(page, 'B people', analyzer='Engine B')
+    expect(analyzer_card(page, 'Engine A')).to_contain_text('A people')
+    expect(analyzer_card(page, 'Engine A')).not_to_contain_text('B people')
+    expect(analyzer_card(page, 'Engine B')).to_contain_text('B people')
+    with api_client() as client:
+        library = client.get('/api/privacy').json()
+        providers = {p['name']: p['id'] for p in library['providers']}
+        checks = {c['name']: c for c in library['checks']}
+        assert checks['B people']['provider_id'] == providers['Engine B']
+        assert checks['A people']['provider_id'] == providers['Engine A']
+    page.screenshot(path=str(tmp_path / 'analyzer-library.png'), full_page=True)
+    page.goto(E2E_BASE_URL + '/targets/mail/tools')
+    panel(page).get_by_role('button', name='Add Check', exact=True).click()
+    analyzer = modal(page).get_by_role('combobox', name=re.compile(r'^Analyzer'))
+    check = modal(page).get_by_role('combobox', name=re.compile(r'^Check'))
+    analyzer.select_option(label='Engine A (Shared)')
+    expect(check).to_contain_text('A people')
+    expect(check).not_to_contain_text('B people')
+    analyzer.select_option(label='Engine B (Shared)')
+    expect(check).not_to_contain_text('A people')
+    check.select_option(label='B people (Shared)')
+    modal(page).get_by_role('combobox', name=re.compile(r'^Tools')).select_option('lookup_user')
+    modal(page).get_by_role('button', name='Save', exact=True).click()
+    expect(modal(page)).not_to_be_visible()
+    binding = panel(page).locator('.privacy-assignments').get_by_role('row').filter(has=page.get_by_role('cell', name='B people', exact=True))
+    expect(binding).to_contain_text('lookup_user')
+    expect(binding).to_contain_text('Engine B')
+    assert NAME not in json.dumps(mcp_call('mail', 'lookup_user', {'name': NAME}))
+    assert json.loads(mcp_call('mail', 'echo', {'text': NAME})['content'][0]['text'])['received'] == NAME
+    assert mcp_call('calendar', 'lookup_user', {'name': NAME})['structuredContent']['name'] == NAME
+    binding.get_by_role('button', name='Pause', exact=True).click()
+    expect(binding).to_contain_text('Paused')
+    binding.get_by_role('button', name='Edit', exact=True).click()
+    modal(page).get_by_role('combobox', name=re.compile(r'^Tools')).select_option('*')
+    modal(page).get_by_role('button', name='Save', exact=True).click()
+    expect(modal(page)).not_to_be_visible()
+    expect(binding).to_contain_text('All tools')
+    expect(binding).to_contain_text('Paused')
+    binding.get_by_role('button', name='Enable', exact=True).click()
+    expect(binding).to_contain_text('Enabled')
+    assert NAME not in json.dumps(mcp_call('mail', 'echo', {'text': NAME}))
+    with api_client() as client:
+        assignments = client.get('/api/targets/mail/privacy').json()['assignments']
+        assert len(assignments) == 1 and assignments[0]['tool_name'] == '*'
+        assert assignments[0]['active'] is True
+        assert client.get('/api/targets/calendar/privacy').json()['assignments'] == []
+    page.screenshot(path=str(tmp_path / 'server-checks.png'), full_page=True)
+    create_check(page, 'Mail private', local=True, analyzer='Engine B')
+    with api_client() as client:
+        assert 'Mail private' not in client.get('/api/privacy').text
+        assert 'Mail private' not in client.get('/api/targets/calendar/privacy').text
+        local = next(c for c in client.get('/api/targets/mail/privacy').json()['checks'] if c['name'] == 'Mail private')
+        assert local['provider_id'] == providers['Engine B']
+    page.on('dialog', lambda dialog: dialog.accept())
+    binding.get_by_role('button', name='Remove', exact=True).click()
+    expect(binding).to_have_count(0)
+    with api_client() as client:
+        assert any(c['id'] == checks['B people']['id'] for c in client.get('/api/privacy').json()['checks'])
+    page.goto(E2E_BASE_URL + '/targets/calendar/tools')
+    expect(panel(page).locator('.privacy-assignments')).not_to_be_visible()
+    expect(panel(page)).not_to_contain_text('Mail private')
+    row = analyzer_card(page, 'Engine B').get_by_role('row').filter(has=page.get_by_role('cell', name='B people', exact=True))
+    row.get_by_role('button', name='Use on this Server', exact=True).click()
+    expect(modal(page).get_by_role('combobox', name=re.compile(r'^Check'))).to_have_value(checks['B people']['id'])
+    modal(page).get_by_role('button', name='Save', exact=True).click()
+    expect(modal(page)).not_to_be_visible()
+    expect(row.get_by_role('button', name='Configure on this Server', exact=True)).to_be_visible()
+    row.get_by_role('button', name='Configure on this Server', exact=True).click()
+    expect(modal(page).get_by_role('heading', name='Edit Server Check', exact=True)).to_be_visible()
+    modal(page).get_by_role('button', name='Cancel', exact=True).click()
+    assert NAME not in json.dumps(mcp_call('calendar', 'lookup_user', {'name': NAME}))
+    assert errors == []
+
+
+def test_server_check_retry_does_not_duplicate_definition(dashboard_page):
+    page = dashboard_page
+    install_stub_via_api('mail')
+    with api_client() as client:
+        client.post('/api/privacy/providers/create', json={'name': 'Shared engine', 'endpoint': 'http://127.0.0.1:5002'}).raise_for_status()
+    page.goto(E2E_BASE_URL + '/targets/mail/tools')
+    analyzer_card(page, 'Shared engine').get_by_role('button', name='Create Server-only Check', exact=True).click()
+    modal(page).get_by_role('textbox', name='Name', exact=True).fill('Retry check')
+    page.route('**/api/targets/mail/privacy/assignments/create',
+        lambda route: route.fulfill(status=500, json={'error': 'Temporary assignment failure'}), times=1)
+    modal(page).get_by_role('button', name='Save and Enable', exact=True).click()
+    expect(modal(page).get_by_role('alert')).to_have_text('Temporary assignment failure')
+    with api_client() as client:
+        state = client.get('/api/targets/mail/privacy').json()
+        assert len(state['checks']) == 1
+        assert state['assignments'] == []
+        identifier = state['checks'][0]['id']
+    modal(page).get_by_role('button', name='Save and Enable', exact=True).click()
+    expect(modal(page)).not_to_be_visible()
+    with api_client() as client:
+        state = client.get('/api/targets/mail/privacy').json()
+        assert len(state['checks']) == 1 and state['checks'][0]['id'] == identifier
+        assert len(state['assignments']) == 1 and state['assignments'][0]['check_id'] == identifier
+        assert client.get('/api/privacy').json()['checks'] == []
+    # An analyzer created on this MCP page also stays local to this server.
+    panel(page).get_by_role('button', name='Add Server Analyzer', exact=True).click()
+    modal(page).get_by_role('textbox', name='Name', exact=True).fill('Mail engine')
+    modal(page).get_by_label('Local service URL').fill('http://127.0.0.1:5002')
+    modal(page).get_by_role('button', name='Save', exact=True).click()
+    expect(modal(page)).not_to_be_visible()
+    expect(analyzer_card(page, 'Mail engine')).to_contain_text('Only this server')
+    with api_client() as client:
+        assert 'Mail engine' not in client.get('/api/privacy').text

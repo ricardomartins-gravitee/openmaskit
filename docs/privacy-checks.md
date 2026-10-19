@@ -1,6 +1,17 @@
 # Reusable privacy checks
 
-The dashboard's **Checks** page contains shared analyzers and check definitions. Each MCP server's tools page has a **Privacy Checks** panel using the same tables, Add/Edit forms and modals as the existing rules and mappers.
+The dashboard's **Analyzers** page groups check definitions under the analyzer that runs them. Each analyzer card shows its type, local URL, connection status and checks, with **Add Check** directly on the card. A check's analyzer is selected by that context and remains fixed when editing the check.
+
+Each MCP server's tools page has a **Privacy Checks** panel beside the existing rules and mappers. **Add Check** opens an analyzer/check picker and a choice of all tools or a specific tool. Assignments can be edited, paused, enabled or removed on that server without editing the shared definition. The analyzer cards on that page also offer **Use on this Server** and **Create Server-only Check**. New server-only checks are saved and enabled for the chosen tools; a failed assignment can be retried without creating a duplicate definition.
+
+## Dashboard workflow
+
+1. Open **Analyzers**, add your locally running analyzer and check its connection.
+2. On its card, choose **Add Check** and configure detection, action and optional structured fields.
+3. Open an MCP server's tools page, choose **Add Check**, select that analyzer and check, then select the tools it should cover.
+4. To configure something just for that server, use **Create Server-only Check** under the appropriate analyzer. **Add Server Analyzer** registers a connection visible only in that server's scope.
+
+Shared definitions are edited in the analyzer library. Server pages show them for reuse, while their own analyzer/check definitions remain editable only within that server.
 
 ## Scope and reuse
 
