@@ -1,6 +1,6 @@
 [project]
-name = "openmaskit"
-version = "0.6.1"
+name = "mail-privacy-proxy"
+version = "0.6.1+privacy.1"
 description = "Drop-in MCP proxy that keeps your secrets out of the context window"
 readme = "README.md"
 authors = [
@@ -22,7 +22,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "mcp[cli]>=1.27.0",
+    "mcp[cli]>=1.27.0,<2",
     "starlette>=0.40.0",
     "uvicorn[standard]>=0.30.0",
     "aiosqlite>=0.20.0",
@@ -40,7 +40,7 @@ Repository = "https://github.com/MaskitMCP/openmaskit"
 Issues = "https://github.com/MaskitMCP/openmaskit/issues"
 
 [project.scripts]
-openmaskit = "openmaskit.__main__:main"
+mail-privacy-proxy = "openmaskit.__main__:main"
 
 [build-system]
 requires = ["hatchling"]

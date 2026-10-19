@@ -1,3 +1,4 @@
+# Modified for Mail Privacy Proxy: privacy correctness and startup fixes.
 """Masking engine: mask values in responses, unmask in arguments."""
 
 from __future__ import annotations
@@ -10,7 +11,7 @@ from typing import Any
 import ahocorasick
 
 from openmaskit.masking.mappers import ResponseMapper
-from openmaskit.masking.parsing import serialize, try_parse_structured
+from openmaskit.masking.parsing import get_max_parse_len, serialize, try_parse_structured
 from openmaskit.masking.rules import (
     ArgumentGuardrail,
     ArgumentInjection,
@@ -25,6 +26,9 @@ from openmaskit.masking.rules import (
 from openmaskit.masking.store import MaskingStore
 
 logger = logging.getLogger(__name__)
+
+# Local patch; the upstream package version remains unchanged.
+FORK_PRIVACY_FIX = "1"
 
 
 class MaskingEngine:
@@ -45,6 +49,7 @@ class MaskingEngine:
         self._counters: dict[str, int] = {}
         self._mappers: list[ResponseMapper] = []
         self._compiled_patterns: dict[int, re.Pattern] = {}
+        logger.info("Mail Privacy Proxy protections active (revision %s)", FORK_PRIVACY_FIX)
         self._guardrails: list[ArgumentGuardrail] = []
         self._compiled_guardrails: dict[int, re.Pattern] = {}
         self._injections: list[ArgumentInjection] = []
@@ -314,6 +319,37 @@ class MaskingEngine:
         applicable_rules = [
             r for r in self._rules if r.active and r.matches_tool(tool_name)
         ]
+        applicable_mappers = sorted(
+            [m for m in self._mappers if m.active and m.matches_tool(tool_name)],
+            key=lambda m: m.order,
+        )
+        needs_parsing = applicable_rules or any(
+            m.mapper_type == "json_field_mask" for m in applicable_mappers
+        )
+        if needs_parsing:
+            limit = get_max_parse_len()
+            content = result.get("content", [])
+            if isinstance(content, list) and any(
+                isinstance(block, dict)
+                and block.get("type") == "text"
+                and isinstance(block.get("text"), str)
+                and len(block["text"]) > limit
+                for block in content
+            ):
+                # Return a fresh error result so no parallel block or structured
+                # copy of the original response can escape the masking boundary.
+                logger.warning("Withheld oversized response requiring field masking")
+                return {
+                    "isError": True,
+                    "content": [{
+                        "type": "text",
+                        "text": (
+                            "Mail Privacy Proxy withheld this response because a text block "
+                            "exceeds the field-masking size limit. Request fewer "
+                            "messages or a smaller response, then retry."
+                        ),
+                    }],
+                }
         if applicable_rules:
             if "structuredContent" in result and isinstance(result["structuredContent"], (dict, list)):
                 result["structuredContent"] = self._mask_structured(
@@ -326,10 +362,6 @@ class MaskingEngine:
                     for block in result["content"]
                 ]
 
-        applicable_mappers = sorted(
-            [m for m in self._mappers if m.active and m.matches_tool(tool_name)],
-            key=lambda m: m.order,
-        )
         if applicable_mappers:
             if "structuredContent" in result and isinstance(result["structuredContent"], (dict, list)):
                 self._apply_mappers_to_structured(
@@ -373,6 +405,8 @@ class MaskingEngine:
         self, real_value: str, tool_name: str, field_path: str, prefix: str
     ) -> str:
         """Get existing or create new alias (in-memory, deferred DB write)."""
+        if real_value == "":
+            return real_value
         prefix_map = self._reverse_cache.get(prefix, {})
         if real_value in prefix_map:
             return prefix_map[real_value]
@@ -410,7 +444,8 @@ class MaskingEngine:
             prefix = rule.effective_prefix
             prefix_map = self._reverse_cache.get(prefix, {})
             for real_value, alias in prefix_map.items():
-                if real_value in text:
+                # Legacy databases may already contain an empty-value alias.
+                if real_value and real_value in text:
                     text = text.replace(real_value, alias)
         block["text"] = text
         return block

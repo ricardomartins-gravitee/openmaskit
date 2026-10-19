@@ -1,3 +1,4 @@
+# Modified for Mail Privacy Proxy: privacy correctness and startup fixes.
 """OpenMaskit entry point."""
 
 from __future__ import annotations
@@ -38,20 +39,7 @@ def print_banner():
     # https://patorjk.com/software/taag
     # DOS Rebel for openmaskit
     # Pagga for version
-    banner = """
-    ███████                                  ██████   ██████                   █████       ███   █████   
-  ███░░░░░███                               ░░██████ ██████                   ░░███       ░░░   ░░███    
- ███     ░░███ ████████   ██████  ████████   ░███░█████░███   ██████    █████  ░███ █████ ████  ███████  
-░███      ░███░░███░░███ ███░░███░░███░░███  ░███░░███ ░███  ░░░░░███  ███░░   ░███░░███ ░░███ ░░░███░   
-░███      ░███ ░███ ░███░███████  ░███ ░███  ░███ ░░░  ░███   ███████ ░░█████  ░██████░   ░███   ░███    
-░░███     ███  ░███ ░███░███░░░   ░███ ░███  ░███      ░███  ███░░███  ░░░░███ ░███░░███  ░███   ░███ ███
- ░░░███████░   ░███████ ░░██████  ████ █████ █████     █████░░████████ ██████  ████ █████ █████  ░░█████ 
-   ░░░░░░░     ░███░░░   ░░░░░░  ░░░░ ░░░░░ ░░░░░     ░░░░░  ░░░░░░░░ ░░░░░░  ░░░░ ░░░░░ ░░░░░    ░░░░░  
-               ░███                                                                                     
-               █████                ░▄▀▄░░░░▄▀▀░░░░▀█░                                                                     
-              ░░░░░                 ░█/█░░░░█▀▄░░░░░█░                                                                     
-                                    ░░▀░░▀░░░▀░░▀░░▀▀▀
-    """
+    banner = f"Mail Privacy Proxy {__version__} — unofficial fork of OpenMaskit"
     print(banner)
 
 async def _flush_loop(engine: MaskingEngine, shutdown_event: anyio.Event):
@@ -334,6 +322,7 @@ async def async_main():
             continue
 
         engine = MaskingEngine([], store, target_name=server_id)
+        await engine.load_rules()
         await engine.load_aliases()
         await engine.load_mappers()
         await engine.load_guardrails()

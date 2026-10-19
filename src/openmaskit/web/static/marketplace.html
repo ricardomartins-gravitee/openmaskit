@@ -1,10 +1,11 @@
+<!-- Modified for Mail Privacy Proxy: unofficial fork identity. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenMaskit - Marketplace</title>
-    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <title>Mail Privacy Proxy - Marketplace</title>
+    <link rel="icon" type="image/svg+xml" href="/static/fork-icon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap">
@@ -15,7 +16,7 @@
 <body>
 <div x-data="marketplacePage()" x-init="init()">
     <header>
-        <h1><a href="/" class="logo-link" aria-label="OpenMaskit home"><img src="/static/icon.png" alt="" class="header-icon">OpenMaskit</a></h1>
+        <h1><a href="/" class="logo-link" aria-label="Mail Privacy Proxy home"><img src="/static/fork-icon.svg" alt="" class="header-icon">Mail Privacy Proxy</a></h1>
         <nav>
             <a href="/">Servers</a>
             <a href="/marketplace" class="active">Marketplace</a>
@@ -83,7 +84,7 @@
                             <button x-show="!server.installed"
                                     class="btn-primary btn-install"
                                     :disabled="server.installing || updateRequired"
-                                    :title="updateRequired ? 'Update OpenMaskit to install' : ''"
+                                    :title="updateRequired ? 'Update Mail Privacy Proxy to install' : ''"
                                     :aria-label="'Install ' + server.name"
                                     @click.stop="installServer(server)">
                                 <span x-show="!server.installing">Install</span>
@@ -244,7 +245,7 @@
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                         </svg>
-                        <span><strong>Local only.</strong> Your credentials are stored on this machine and never sent to OpenMaskit servers.</span>
+                        <span><strong>Local only.</strong> Your credentials are stored on this machine and never sent to Mail Privacy Proxy servers.</span>
                     </div>
 
                     <p class="modal-desc">
@@ -323,7 +324,7 @@
             <template x-if="modal.oauthMode === 'dcr'">
                 <div>
                     <p class="modal-desc">
-                        OpenMaskit will register an OAuth client with this server automatically and run the authorization flow in your browser.
+                        Mail Privacy Proxy will register an OAuth client with this server automatically and run the authorization flow in your browser.
                         <template x-if="modal.setupGuideUrl">
                             <a :href="modal.setupGuideUrl" target="_blank" rel="noopener" class="modal-guide-link">
                                 Setup guide
@@ -431,7 +432,7 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                             </svg>
-                            <span><strong>Local only.</strong> Your credentials are stored on this machine and never sent to OpenMaskit servers.</span>
+                            <span><strong>Local only.</strong> Your credentials are stored on this machine and never sent to Mail Privacy Proxy servers.</span>
                         </div>
                     </template>
                     <p class="modal-desc">
@@ -484,7 +485,7 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                             </svg>
-                            <span><strong>Local only.</strong> Your credentials are stored on this machine and never sent to OpenMaskit servers.</span>
+                            <span><strong>Local only.</strong> Your credentials are stored on this machine and never sent to Mail Privacy Proxy servers.</span>
                         </div>
                     </template>
                     <p class="modal-desc">
@@ -621,7 +622,7 @@ function marketplacePage() {
         installType(server) {
             const mode = server.oauth_mode;
             if (mode === 'byo') return { label: 'BYO', slug: 'byo', title: 'Bring-your-own OAuth: paste your own client_id and secret' };
-            if (mode === 'dcr') return { label: 'DCR', slug: 'dcr', title: 'Dynamic Client Registration: OpenMaskit registers an OAuth client automatically' };
+            if (mode === 'dcr') return { label: 'DCR', slug: 'dcr', title: 'Dynamic Client Registration: Mail Privacy Proxy registers an OAuth client automatically' };
             if (!mode && server.requires_oauth) return { label: 'BROKER', slug: 'broker', title: 'Hosted OAuth broker (currently disabled)' };
             if (server.header_vars && server.header_vars.length > 0) return { label: 'API KEY', slug: 'header', title: 'Static HTTP headers (e.g. API-key auth)' };
             if (server.env_vars && server.env_vars.length > 0) return { label: 'ENV', slug: 'env', title: 'Needs environment variables (e.g. a token or API key)' };

@@ -51,6 +51,7 @@ concurrency:
 
 jobs:
   test:
+    if: github.repository == 'MaskitMCP/openmaskit'
     name: Run tests
     runs-on: ubuntu-latest
     steps:

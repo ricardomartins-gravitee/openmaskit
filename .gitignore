@@ -37,3 +37,7 @@ htmlcov/
 
 .codegraph
 bench_unmask.py
+
+# Fork build, deployment, logs and local state
+.runtime/
+.maintenance/

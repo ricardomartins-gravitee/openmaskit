@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.10"
 
 [[package]]
@@ -461,7 +461,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -689,6 +689,61 @@ wheels = [
 ]
 
 [[package]]
+name = "mail-privacy-proxy"
+version = "0.6.1+privacy.1"
+source = { editable = "." }
+dependencies = [
+    { name = "aiosqlite" },
+    { name = "anyio" },
+    { name = "cryptography" },
+    { name = "httpx" },
+    { name = "mcp", extra = ["cli"] },
+    { name = "pyahocorasick" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "starlette" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "respx" },
+]
+e2e = [
+    { name = "pytest" },
+    { name = "pytest-playwright" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiosqlite", specifier = ">=0.20.0" },
+    { name = "anyio", specifier = ">=4.0" },
+    { name = "cryptography", specifier = ">=48.0.0" },
+    { name = "httpx", specifier = ">=0.27.0" },
+    { name = "mcp", extras = ["cli"], specifier = ">=1.27.0,<2" },
+    { name = "pyahocorasick", specifier = ">=2.0.0" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "starlette", specifier = ">=0.40.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-asyncio", specifier = ">=0.23" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "respx", specifier = ">=0.23.1" },
+]
+e2e = [
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-playwright", specifier = ">=0.5.0" },
+]
+
+[[package]]
 name = "markdown-it-py"
 version = "4.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -738,61 +793,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d6/54/cfe61301667036ec958cb99bd3efefba235e65cdeb9c84d24a8293ba1d90/mdurl-0.1.2.tar.gz", hash = "sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba", size = 8729, upload-time = "2022-08-14T12:40:10.846Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979, upload-time = "2022-08-14T12:40:09.779Z" },
-]
-
-[[package]]
-name = "openmaskit"
-version = "0.6.1"
-source = { editable = "." }
-dependencies = [
-    { name = "aiosqlite" },
-    { name = "anyio" },
-    { name = "cryptography" },
-    { name = "httpx" },
-    { name = "mcp", extra = ["cli"] },
-    { name = "pyahocorasick" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-    { name = "starlette" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "respx" },
-]
-e2e = [
-    { name = "pytest" },
-    { name = "pytest-playwright" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiosqlite", specifier = ">=0.20.0" },
-    { name = "anyio", specifier = ">=4.0" },
-    { name = "cryptography", specifier = ">=48.0.0" },
-    { name = "httpx", specifier = ">=0.27.0" },
-    { name = "mcp", extras = ["cli"], specifier = ">=1.27.0" },
-    { name = "pyahocorasick", specifier = ">=2.0.0" },
-    { name = "pydantic", specifier = ">=2.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "starlette", specifier = ">=0.40.0" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "pytest-asyncio", specifier = ">=0.23" },
-    { name = "pytest-cov", specifier = ">=7.1.0" },
-    { name = "respx", specifier = ">=0.23.1" },
-]
-e2e = [
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "pytest-playwright", specifier = ">=0.5.0" },
 ]
 
 [[package]]

@@ -1,0 +1,41 @@
+name: Maintain private fork
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: maintain-private-fork
+  cancel-in-progress: false
+jobs:
+  update:
+    if: github.repository != 'MaskitMCP/openmaskit'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v4
+      - name: Configure maintenance identity
+        run: |
+          git config user.name 'Mail Privacy Proxy maintenance'
+          git config user.email 'maintenance@localhost'
+      - name: Set up the locked environment
+        run: uv sync --frozen --python 3.12
+      - name: Merge upstream and validate the candidate
+        run: uv run --frozen python scripts/maintain.py
+      - name: Publish the tested update
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh auth setup-git
+          git push origin HEAD:main
+      - name: Save maintenance result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maintenance-status
+          path: .runtime/maintenance-status.json
+          retention-days: 14

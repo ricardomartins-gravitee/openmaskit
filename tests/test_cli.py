@@ -80,4 +80,5 @@ class TestVersion:
         """__version__ is a non-empty string matching pyproject.toml or 'unknown'."""
         assert isinstance(__version__, str)
         assert len(__version__) > 0
-        assert __version__ == "0.6.1" or __version__ == "unknown"
+        from importlib.metadata import version
+        assert __version__ == version("mail-privacy-proxy")
