@@ -39,7 +39,10 @@ PG_HANDLE = "postgres"
 
 def _install_postgres(page: Page, pg_uri: str) -> None:
     page.goto(f"{E2E_BASE_URL}/marketplace")
-    page.get_by_role("textbox", name=re.compile(r"Search servers", re.I)).fill("postgres")
+    # Wait for debounced search to replace the catalog rows before installing.
+    # Otherwise its late response can replace the row the install is updating.
+    with page.expect_response(lambda response: '/api/marketplace?' in response.url and 'q=postgres' in response.url):
+        page.get_by_role("textbox", name=re.compile(r"Search servers", re.I)).fill("postgres")
     page.get_by_role("button", name="Install PostgreSQL").click()
     page.get_by_role("textbox", name="Database URI").fill(pg_uri)
     page.get_by_role("button", name="Install", exact=True).click()

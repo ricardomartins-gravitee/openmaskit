@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+# Modified in the unofficial fork: optional reusable analyzer checks on tool results.
+
 import json
 import logging
 import time
@@ -173,6 +175,7 @@ class TargetState:
     # `run` command. Used by manager.remove_target to explicitly stop the
     # container regardless of whether connect_upstream's `finally` runs.
     container_info: tuple[str, str] | None = None
+    privacy_checks: Any | None = None
 
     def cache_tool_schemas(self, schemas: list[dict[str, Any]]):
         self.tool_schemas = schemas
@@ -213,6 +216,7 @@ class ProxyState:
         self.config_target_ids: set[str] = set()
         self.mcp_port: int = 9474
         self.version_status: dict[str, Any] | None = None
+        self.privacy_checks: Any | None = None
 
     def get_target(self, name: str) -> TargetState | None:
         return self.targets.get(name)
@@ -367,7 +371,7 @@ async def _relay_upstream_to_downstream(
                 logger.warning("[%s] Upstream parse error: %s", target.name, msg)
                 continue
 
-            modified = _intercept_response(msg, target)
+            modified = await _intercept_response_with_checks(msg, target)
             if modified is not None:
                 root = modified.message.root
                 if isinstance(root, JSONRPCResponse) and root.id is not None:
@@ -500,7 +504,34 @@ def _dump_json(value: Any) -> str | None:
         return None
 
 
-def _intercept_response(msg: SessionMessage, target: TargetState) -> SessionMessage | None:
+async def _intercept_response_with_checks(msg: SessionMessage, target: TargetState) -> SessionMessage | None:
+    """Run optional analyzers without blocking the event loop or changing legacy interception."""
+    from copy import deepcopy
+    from openmaskit.privacy.registry import withheld
+
+    root = msg.message.root
+    prepared = None
+    if isinstance(root, JSONRPCResponse) and getattr(target, "privacy_checks", None) is not None:
+        pending = target.pending_tool_calls.get(root.id)
+        if pending and target.privacy_checks.effective(target.name, pending["tool_name"]):
+            tool_name = pending["tool_name"]
+            try:
+                if not isinstance(root.result, dict):
+                    prepared = withheld()
+                else:
+                    masked = target.engine.mask_response(tool_name, deepcopy(root.result))
+                    prepared = await target.privacy_checks.apply(target.name, tool_name, masked,
+                        lambda value, prefix, path: target.engine._get_or_create_alias(value, tool_name, path, prefix),
+                        target.engine.alias_spans)
+            except Exception:
+                logger.warning("Required privacy check failed; response withheld")
+                prepared = withheld()
+    if prepared is None:
+        return _intercept_response(msg, target)
+    return _intercept_response(msg, target, prepared_result=prepared)
+
+
+def _intercept_response(msg: SessionMessage, target: TargetState, prepared_result=None) -> SessionMessage | None:
     """Intercept upstream responses, mask tool call results and cache tool schemas.
 
     Returns None if the message should not be forwarded downstream.
@@ -552,14 +583,14 @@ def _intercept_response(msg: SessionMessage, target: TargetState) -> SessionMess
         # Extract original response preview BEFORE masking
         original_preview = None
         if result and isinstance(result, dict):
-            for block in result.get("content", []):
-                if isinstance(block, dict) and block.get("type") == "text" and block.get("text"):
+            for block in (result.get("content") or []) if isinstance(result.get("content", []), list) else []:
+                if isinstance(block, dict) and block.get("type") == "text" and isinstance(block.get("text"), str) and block["text"]:
                     original_preview = _truncate_preview(block["text"])
                     break
 
-        if target.engine and result:
+        if target.engine and (result or prepared_result is not None):
             pending_before = target.engine.pending_writes_count
-            root.result = target.engine.mask_response(tool_name, result)
+            root.result = prepared_result if prepared_result is not None else target.engine.mask_response(tool_name, result)
             new_masks = target.engine.get_new_masks_since(pending_before)
             for alias, real_value, _, field_path in new_masks:
                 logger.debug("[%s] Masked %s.%s: %s → %s", target.name, tool_name, field_path, real_value, alias)
@@ -574,7 +605,7 @@ def _intercept_response(msg: SessionMessage, target: TargetState) -> SessionMess
                     break
 
         status = "ok"
-        if result and isinstance(result, dict) and result.get("isError"):
+        if isinstance(masked_result, dict) and masked_result.get("isError"):
             status = "error"
 
         target._emit_traffic(TrafficEntry(

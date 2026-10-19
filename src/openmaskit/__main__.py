@@ -249,6 +249,8 @@ async def async_main():
 
     state = ProxyState()
     state.store = store
+    from openmaskit.privacy.registry import PrivacyChecks
+    state.privacy_checks = await PrivacyChecks.create(store)
     state.traffic_store = traffic_store
     state.traffic_buffer = traffic_buffer
     state.mcp_port = config.mcp_port
@@ -291,6 +293,7 @@ async def async_main():
         target_state = TargetState(
             name=name,
             engine=engine,
+            privacy_checks=state.privacy_checks,
             hidden_tools=set(hidden),
             ds_read_send=ds_read_send,
             ds_read_recv=ds_read_recv,
@@ -333,6 +336,7 @@ async def async_main():
         target_state = TargetState(
             name=server_id,
             engine=engine,
+            privacy_checks=state.privacy_checks,
             hidden_tools=set(hidden),
             ds_read_send=ds_read_send,
             ds_read_recv=ds_read_recv,

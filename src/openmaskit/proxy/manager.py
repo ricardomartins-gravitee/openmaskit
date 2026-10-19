@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+# Modified in the unofficial fork: attach the shared privacy-check registry.
+
 import logging
 import sys
 from contextlib import AsyncExitStack
@@ -108,6 +110,7 @@ class TargetManager:
         target = TargetState(
             name=server_id,
             engine=engine,
+            privacy_checks=getattr(self._state, "privacy_checks", None),
             hidden_tools=set(hidden),
             ds_read_send=ds_read_send,
             ds_read_recv=ds_read_recv,

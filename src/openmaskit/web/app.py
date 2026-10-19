@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+# Modified in the unofficial fork: dashboard routes for reusable privacy checks.
+
 from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -89,9 +91,14 @@ def create_app(
     from openmaskit.web.routes.rules import rules_create, rules_delete, rules_list, rules_update
     from openmaskit.web.routes.traffic import api_mappings, api_traffic
     from openmaskit.web.health import health_check
+    from openmaskit.web.routes.privacy import (
+        privacy_page, privacy_list, privacy_save, privacy_delete,
+        privacy_assign, privacy_unassign, privacy_preview,
+    )
 
     routes = [
         Route("/", targets_page),
+        Route("/privacy", privacy_page),
         Route("/marketplace", marketplace_page),
         Route("/health", health_check, methods=["GET"]),
         Route("/api/csrf", api_csrf),
@@ -143,6 +150,23 @@ def create_app(
         Route("/targets/{target_name}/tools/{tool_name:path}", tool_detail_page),
         Mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static"),
     ]
+
+    # Specific bindings precede the generic definition routes.
+    base = "/api/targets/{target_name}/privacy/assignments"
+    routes.extend([
+        Route(base + "/create", privacy_assign, methods=["POST"]),
+        Route(base + "/{identifier}/update", privacy_assign, methods=["POST"]),
+        Route(base + "/{identifier}/delete", privacy_unassign, methods=["POST", "DELETE"]),
+    ])
+    # Same Origin, CSRF and request-size protections as existing dashboard rules.
+    for base in ("/api/privacy", "/api/targets/{target_name}/privacy"):
+        routes.extend([
+            Route(base, privacy_list, methods=["GET"]),
+            Route(base + "/preview", privacy_preview, methods=["POST"]),
+            Route(base + "/{kind}/create", privacy_save, methods=["POST"]),
+            Route(base + "/{kind}/{identifier}/update", privacy_save, methods=["POST"]),
+            Route(base + "/{kind}/{identifier}/delete", privacy_delete, methods=["POST", "DELETE"]),
+        ])
 
     if allowed_origins is None:
         web_port = getattr(state, "web_port", 9473)

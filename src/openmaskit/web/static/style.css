@@ -5177,3 +5177,21 @@ code {
 .custom-header-secret input[type="checkbox"] {
     accent-color: var(--primary, #58a6ff);
 }
+
+/* Privacy checks reuse the existing panels, tables and server-settings modal. */
+.privacy-panel a { color: var(--accent); }
+.privacy-panel .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.privacy-panel .form-row { margin: 1rem 0; align-items: flex-end; }
+.privacy-panel .form-row .modal-field { flex: 1; }
+.privacy-panel td button { margin: .15rem; }
+.privacy-panel .modal-field { margin-bottom: 1rem; }
+.privacy-panel select, .privacy-panel textarea { width: 100%; }
+.privacy-panel summary { cursor: pointer; margin: 1rem 0; font-weight: 600; }
+.privacy-error { color: var(--danger, #f85149); overflow-wrap: anywhere; }
+.privacy-preview { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 15rem; overflow: auto; padding: 1rem; }
+.privacy-note { margin-top: 1.25rem; font-size: .85rem; }
+.privacy-panel [x-cloak] { display: none !important; }
+@media (max-width: 640px) {
+    .privacy-panel { overflow-x: auto; }
+    .privacy-panel .panel-header, .privacy-panel .form-row { flex-direction: column; align-items: stretch; }
+}

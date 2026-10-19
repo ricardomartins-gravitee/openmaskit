@@ -53,6 +53,13 @@ def free_port():
         return s.getsockname()[1]
 
 
+def target_ready(web):
+    # The dashboard listener starts before upstream MCP bootstrapping finishes.
+    # Wait for tool discovery, rather than treating a reachable dashboard as MCP readiness.
+    with urllib.request.urlopen(f'http://127.0.0.1:{web}/api/targets/synthetic/tools', timeout=1) as response:
+        return any(tool.get('name') == 'getMessage' for tool in json.load(response).get('tools', []))
+
+
 async def probe(web, mcp):
     from mcp import ClientSession
     from mcp.client.streamable_http import streamable_http_client
@@ -111,11 +118,12 @@ def run():
                     if process.poll() is not None:
                         raise RuntimeError('Synthetic proxy exited: ' + (directory / 'proxy.log').read_text()[-2500:])
                     try:
-                        with urllib.request.urlopen(f'http://127.0.0.1:{web}/api/config', timeout=1):
+                        if target_ready(web):
                             break
                     except Exception:
-                        if time.monotonic() > deadline:
-                            raise RuntimeError('Synthetic proxy did not start')
+                        pass
+                    if time.monotonic() > deadline:
+                        raise RuntimeError('Synthetic MCP target did not become ready')
                         time.sleep(0.1)
                 asyncio.run(probe(web, mcp))
             finally:

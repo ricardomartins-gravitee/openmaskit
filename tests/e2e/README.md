@@ -22,7 +22,7 @@ Browser-driven end-to-end tests that boot a real OpenMaskit subprocess on dedica
       (2, 'John Doe', 'john.doe@gmail.com', '+31611119987');
   ```
 - Reachable from the container — on macOS that means `host.containers.internal` (Podman) or `host.docker.internal` (Docker Desktop), not `localhost`.
-- Network access to `api.maskitmcp.com` (the marketplace catalog).
+- Network access for the initial dependency, NLP model, browser and container downloads. Marketplace tests use a local catalog fixture by default, while running the real PostgreSQL MCP container. Set `OM_E2E_LIVE_CATALOG=1` to probe the public catalog separately.
 - Ports `19473` / `19474` free.
 
 ## Run
@@ -47,5 +47,36 @@ E2E tests are excluded from the default `uv run pytest tests/` run via the `-m '
 
 ## Notes
 
-- Each run spawns a fresh OpenMaskit subprocess against a per-session tmp store dir, so tests never touch your real `~/.openmaskit/` data and runs are independent.
+- Each test spawns a fresh proxy with an isolated home, database, encryption key, installation identifier, logs and separate dashboard/MCP ports. The selected Docker daemon socket is preserved without copying Docker credentials. The normal running proxy and user data are not used.
 - The proxy must download the postgres-mcp container image on first run — the install step's timeout is set to 60s to accommodate this; if you're on a slow link, pre-pull with `docker pull crystaldba/postgres-mcp` (or your runtime's equivalent).
+
+## Real Presidio acceptance
+
+The two privacy acceptance tests cover the shared library, server-only checks,
+preview, editing, removal, pause isolation, mobile layout and browser errors;
+and real MCP masking of both JSON text and structured results, per-server alias
+isolation and reversal, full process restart, and withholding during an analyzer
+outage. They use only synthetic data. Presidio runs as a disposable test process,
+not an installed or scheduled service.
+
+```bash
+uv venv --python 3.12 .runtime/presidio-test
+uv pip install --python .runtime/presidio-test/bin/python -r tests/e2e/requirements-presidio.txt
+PRESIDIO_TEST_PYTHON="$PWD/.runtime/presidio-test/bin/python" \
+  OM_E2E_PG_URI=postgresql://user:pass@host.docker.internal:5432/dbname \
+  uv run --frozen --group e2e pytest tests/e2e -m e2e -v \
+  --basetemp=.runtime/acceptance --junitxml=.runtime/acceptance.xml \
+  --screenshot only-on-failure --output .runtime/browser-results
+```
+
+Without `PRESIDIO_TEST_PYTHON`, the real-model tests skip. Without
+`OM_E2E_PG_URI`, the four PostgreSQL tests skip. GitHub's acceptance job provisions
+both and runs the complete suite; the unit job runs all non-browser regressions
+and the existing real startup/MCP smoke check. These jobs run on pull requests
+and main-branch pushes, without local scheduling or automatic installation.
+
+The public catalog returned HTTP 400 ("Missing required headers") during the
+19 October 2026 acceptance run, including with the original upstream version
+header. Its live availability is independent of this change. The local catalog
+fixture preserves the tested API contract without making acceptance depend on
+that external service. It does not simulate the MCP server or database.
