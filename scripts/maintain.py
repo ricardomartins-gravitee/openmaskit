@@ -67,6 +67,13 @@ def maintain(args):
     refresh = args.dependencies or (today - last).days >= 7
     changed = upstream != config['upstream_commit']
     if not changed and not refresh:
+        if args.deploy:
+            deployed = json.loads((STATE / 'deployment.json').read_text()) if (STATE / 'deployment.json').exists() else {}
+            if deployed.get('commit') != base:
+                env = build_env()
+                validate(ROOT, env)
+                run([sys.executable, str(ROOT / 'scripts/deploy.py')], env=env)
+                return {'status': 'deployed', 'upstream_commit': upstream, 'commit': base}
         return {'status': 'unchanged', 'upstream_commit': upstream, 'commit': base}
 
     candidate = STATE / 'candidates' / f'{base[:12]}-{upstream[:12]}-{today.isoformat()}'
