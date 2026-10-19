@@ -52,8 +52,8 @@ E2E tests are excluded from the default `uv run pytest tests/` run via the `-m '
 
 ## Real Presidio acceptance
 
-The two privacy acceptance tests cover the shared library, server-only checks,
-preview, editing, removal, pause isolation, mobile layout and browser errors;
+The privacy acceptance tests cover the shared library, server-only checks,
+analyzer-owned definitions, filtered server/tool assignments, preview, editing, removal, pause isolation, retry without duplicate definitions, mobile layout and browser errors;
 and real MCP masking of both JSON text and structured results, per-server alias
 isolation and reversal, full process restart, and withholding during an analyzer
 outage. They use only synthetic data. Presidio runs as a disposable test process,

@@ -5202,3 +5202,26 @@ code {
     .privacy-panel { overflow-x: auto; }
     .privacy-panel .panel-header, .privacy-panel .form-row { flex-direction: column; align-items: stretch; }
 }
+
+/* Analyzer ownership is visible in both the library and server check settings. */
+.privacy-definitions-header { margin: 1.75rem 0 .75rem; }
+.privacy-analyzer-list { display: grid; gap: 1.25rem; margin-top: 1.25rem; }
+.privacy-analyzer-card { min-width: 0; border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 1.25rem; background: var(--bg-root); }
+.privacy-analyzer-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.privacy-analyzer-identity { min-width: 0; }
+.privacy-analyzer-identity h3 { margin: 0 0 .35rem; overflow-wrap: anywhere; }
+.privacy-analyzer-meta, .privacy-endpoint { color: var(--text-secondary); font-size: .85rem; }
+.privacy-endpoint { font-family: var(--font-mono); overflow-wrap: anywhere; }
+.privacy-connection { color: var(--text-muted); font-size: .8rem; margin-top: .4rem; }
+.privacy-connected { color: var(--green); }
+.privacy-unavailable { color: var(--red); }
+.privacy-analyzer-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
+.privacy-checks-heading { margin: 1.25rem 0 .5rem; }
+.privacy-table-wrap { max-width: 100%; overflow-x: auto; }
+.privacy-actions { white-space: nowrap; }
+.privacy-panel input[readonly] { color: var(--text-secondary); }
+@media (max-width: 640px) {
+    .privacy-analyzer-header { flex-direction: column; }
+    .privacy-analyzer-actions { justify-content: flex-start; }
+    .privacy-analyzer-card { padding: 1rem; }
+}
