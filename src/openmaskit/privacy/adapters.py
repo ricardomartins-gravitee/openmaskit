@@ -39,8 +39,10 @@ class HttpSpanAdapter:
         if len(text) > MAX_TEXT:
             raise CheckFailure("Text exceeds analyzer limit")
         endpoint = provider.endpoint
-        if provider.adapter == "presidio" and not endpoint.endswith("/analyze"):
-            endpoint += "/analyze"
+        if provider.adapter == "presidio":
+            endpoint = endpoint.rstrip("/")
+            if not endpoint.endswith("/analyze"):
+                endpoint += "/analyze"
         payload = {"text": text, "language": check.language, "entities": check.entities,
                    "score_threshold": check.threshold}
         try:

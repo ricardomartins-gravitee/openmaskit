@@ -30,7 +30,7 @@ class ProviderConfig(BaseModel):
             raise ValueError("Use localhost or a loopback IP address") from exc
         if not local or port == 0:
             raise ValueError("Only local analyzers are supported")
-        return value.rstrip("/")
+        return value
 
 
 class CheckConfig(BaseModel):

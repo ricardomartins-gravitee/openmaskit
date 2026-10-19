@@ -558,3 +558,21 @@ async def test_field_path_segments_do_not_match_literal_dotted_keys(setup, analy
         'messages': [{'body': NAME, 'body.suffix': NAME}]}})
     assert result['structuredContent'] == {'messages.body': NAME,
         'messages': [{'body': 'person_1', 'body.suffix': NAME}]}
+
+
+@pytest.mark.parametrize('adapter, configured, requested', [
+    ('presidio', URL + '/', URL + '/analyze'),
+    ('presidio', URL + '/analyze/', URL + '/analyze'),
+    ('http_spans', URL + '/detect/', URL + '/detect/'),
+])
+async def test_adapter_preserves_meaningful_endpoint_paths(adapter, configured, requested):
+    provider = ProviderConfig(name='Local', adapter=adapter, endpoint=configured)
+    rows = findings(NAME)
+    with respx.mock as router:
+        route = router.post(requested).mock(return_value=httpx.Response(200,
+            json={'findings': rows} if adapter == 'http_spans' else rows))
+        async with httpx.AsyncClient() as client:
+            result = await HttpSpanAdapter().analyze(client, provider,
+                CheckConfig(name='Draft', provider_id='id'), NAME)
+        assert len(result) == 1
+        assert len(route.calls) == 1
