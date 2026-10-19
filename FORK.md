@@ -16,7 +16,7 @@ The parsing limit is still a resource guard. Names in message bodies, subjects, 
 
 `bin/maintain` checks upstream every scheduled run. It prepares a separate candidate, merges upstream, updates the visible fork version, validates the complete non-browser test suite and a real synthetic startup/MCP check, then advances the maintained source only if validation passes. Locked dependencies are refreshed at least weekly.
 
-The GitHub workflow checks upstream every six hours and publishes tested source updates. The local recurring maintenance task also updates the source and deploys a successful candidate when the computer is available. A conflict, failed check or incompatible change requires attention; it does not replace the live release.
+The GitHub workflow checks upstream every six hours and publishes tested source updates independently of the user's computer. There is no local recurring maintenance task: the local automation was deleted at the user's request. Local updates are installed manually when the user requests them. Do not create local scheduled jobs or automatic installations. A conflict, failed check or incompatible change requires attention; it does not replace the live release.
 
 ## Deployment
 
