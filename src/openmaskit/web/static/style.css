@@ -5179,6 +5179,7 @@ code {
 }
 
 /* Privacy checks reuse the existing panels, tables and server-settings modal. */
+.privacy-panel a { color: var(--accent); }
 .privacy-panel .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .privacy-panel .form-row { margin: 1rem 0; align-items: flex-end; }
 .privacy-panel .form-row .modal-field { flex: 1; }

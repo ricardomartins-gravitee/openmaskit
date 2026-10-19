@@ -32,7 +32,7 @@
             <td x-text="check(binding.check_id)?.scope === null ? 'Shared' : 'Only this server'"></td>
             <td x-text="binding.tool_name === '*' ? 'All tools' : binding.tool_name"></td>
             <td x-text="binding.active ? 'Enabled' : 'Paused'"></td>
-            <td><button @click="toggle(binding)" :disabled="busy" x-text="binding.active ? 'Pause' : 'Enable'"></button>
+            <td><button class="btn-small" @click="toggle(binding)" :disabled="busy" x-text="binding.active ? 'Pause' : 'Enable'"></button>
                 <button class="btn-danger" @click="detach(binding)" :disabled="busy">Remove</button></td>
         </tr></template></tbody>
     </table>
@@ -45,8 +45,8 @@
             <td x-text="item.name"></td><td x-text="providerName(item.provider_id)"></td>
             <td x-text="{mask: 'Reversible alias', redact: 'Redact', block: 'Block response'}[item.action]"></td>
             <td x-show="!scope" x-text="item.used_by + ' servers'"></td>
-            <td><button @click="openCheck(item)" :disabled="busy">Edit</button>
-                <button x-show="scope" @click="selectedCheck = item.id; attach()" :disabled="busy">Use</button>
+            <td><button class="btn-small" @click="openCheck(item)" :disabled="busy">Edit</button>
+                <button class="btn-small" x-show="scope" @click="selectedCheck = item.id; attach()" :disabled="busy">Use</button>
                 <button class="btn-danger" @click="remove('checks', item)" :disabled="busy">Delete</button></td>
         </tr></template></tbody>
     </table>
@@ -55,14 +55,14 @@
     <details :open="!scope" class="privacy-analyzers">
         <summary>Analyzers</summary>
         <p class="muted">Connect a locally running Presidio or compatible analyzer. Registering it does not install software.</p>
-        <button @click="openProvider()" :disabled="busy" x-text="scope ? 'Add Server Analyzer' : 'Add Shared Analyzer'"></button>
+        <button class="btn-small" @click="openProvider()" :disabled="busy" x-text="scope ? 'Add Server Analyzer' : 'Add Shared Analyzer'"></button>
         <table x-show="providers.length">
             <thead><tr><th>Name</th><th>Type</th><th>Scope</th><th>Connection</th><th></th></tr></thead>
             <tbody><template x-for="provider in providers" :key="provider.id"><tr>
                 <td x-text="provider.name"></td><td x-text="provider.adapter === 'presidio' ? 'Presidio' : 'Compatible analyzer'"></td>
                 <td x-text="scopeLabel(provider)"></td><td x-text="health[provider.id] || 'Not checked'"></td>
-                <td><button @click="connection(provider)" :disabled="busy">Check Connection</button>
-                    <button x-show="provider.scope === scope" @click="openProvider(provider)" :disabled="busy">Edit</button>
+                <td><button class="btn-small" @click="connection(provider)" :disabled="busy">Check Connection</button>
+                    <button class="btn-small" x-show="provider.scope === scope" @click="openProvider(provider)" :disabled="busy">Edit</button>
                     <button x-show="provider.scope === scope" class="btn-danger" @click="remove('providers', provider)" :disabled="busy">Delete</button></td>
             </tr></template></tbody>
         </table>
@@ -102,13 +102,13 @@
                         </select></label>
                         <details><summary>Preview</summary>
                             <label class="modal-field">Sample text<textarea x-model="previewText" rows="3" maxlength="100000"></textarea></label>
-                            <button type="button" @click="preview()" :disabled="busy || !checkForm.provider_id">Preview Check</button>
+                            <button type="button" class="btn-small" @click="preview()" :disabled="busy || !checkForm.provider_id">Preview Check</button>
                             <pre class="privacy-preview" x-show="previewResult" x-text="previewResult"></pre>
                             <p class="muted">Preview uses temporary aliases and does not save sample text or mappings.</p>
                         </details>
                     </div>
                 </div>
-                <div class="modal-footer"><button type="button" @click="modal = ''" :disabled="busy">Cancel</button>
+                <div class="modal-footer"><button type="button" class="btn-small" @click="modal = ''" :disabled="busy">Cancel</button>
                     <button type="submit" class="btn-primary" :disabled="busy" x-text="busy ? 'Saving…' : 'Save'"></button></div>
             </form>
         </div>

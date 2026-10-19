@@ -90,6 +90,11 @@ def test_shared_and_local_dashboard_lifecycle(dashboard_page, real_presidio, tmp
     page.set_viewport_size({'width': 390, 'height': 844})
     expect(panel(page).get_by_role('heading', name='Privacy Checks', exact=True)).to_be_visible()
     assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
+    # Library links and secondary controls use the dashboard theme.
+    expect(panel(page).get_by_role('button', name='Pause', exact=True)).to_have_class(re.compile(r'\bbtn-small\b'))
+    link = panel(page).get_by_role('link', name='Open shared library')
+    assert link.evaluate('(el) => getComputedStyle(el).color') == 'rgb(88, 166, 255)'
+    page.evaluate('window.scrollTo(0, 0)')
     page.screenshot(path=str(tmp_path / 'privacy-mobile.png'), full_page=True)
     assert errors == []
 
