@@ -43,7 +43,7 @@ def proxy():
     import openmaskit.__main__ as main
     # Isolate the fixture from the user's installation identifier.
     main._load_installation_id = lambda: 'synthetic-privacy-regression'
-    sys.argv = ['mcp-privacy-proxy', *sys.argv[2:]]
+    sys.argv = ['openmaskit', *sys.argv[2:]]
     main.main()
 
 

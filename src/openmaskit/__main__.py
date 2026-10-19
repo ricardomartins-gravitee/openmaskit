@@ -1,4 +1,4 @@
-# Modified for MCP Privacy Proxy: privacy correctness and startup fixes.
+# Modified for OpenMaskit: privacy correctness and startup fixes.
 """OpenMaskit entry point."""
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ def print_banner():
     # https://patorjk.com/software/taag
     # DOS Rebel for openmaskit
     # Pagga for version
-    banner = f"MCP Privacy Proxy {__version__} — unofficial fork of OpenMaskit"
+    banner = f"OpenMaskit {__version__} — unofficial maintained fork"
     print(banner)
 
 async def _flush_loop(engine: MaskingEngine, shutdown_event: anyio.Event):

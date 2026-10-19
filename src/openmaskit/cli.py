@@ -1,4 +1,3 @@
-# Modified for MCP Privacy Proxy: identify the unofficial command.
 """Command-line argument parsing for OpenMaskit."""
 
 from __future__ import annotations
@@ -11,7 +10,7 @@ from openmaskit import __version__
 
 def create_parser() -> argparse.ArgumentParser:
     """Create the argument parser."""
-    description = """MCP Privacy Proxy - unofficial fork of OpenMaskit; MCP server proxy that masks sensitive data
+    description = """OpenMaskit - MCP server proxy that masks sensitive data
 
 Drop-in proxy between AI coding agents and MCP servers. OpenMaskit intercepts
 tool responses to mask/strip sensitive fields (API keys, emails, hostnames),
@@ -31,7 +30,7 @@ Examples:
 Documentation: https://github.com/MaskitMCP/openmaskit"""
 
     parser = argparse.ArgumentParser(
-        prog="mcp-privacy-proxy",
+        prog="openmaskit",
         description=description,
         epilog=epilog,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -78,7 +77,7 @@ Documentation: https://github.com/MaskitMCP/openmaskit"""
     parser.add_argument(
         "--version",
         action="version",
-        version=f"mcp-privacy-proxy {__version__}",
+        version=f"openmaskit {__version__}",
     )
 
     return parser

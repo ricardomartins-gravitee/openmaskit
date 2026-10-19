@@ -732,8 +732,8 @@ cli = [
 ]
 
 [[package]]
-name = "mcp-privacy-proxy"
-version = "0.6.1+privacy.5"
+name = "openmaskit"
+version = "0.6.1+privacy.6"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
