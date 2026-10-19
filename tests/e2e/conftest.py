@@ -106,7 +106,7 @@ def _spawn_openmaskit(store_dir: Path) -> subprocess.Popen:
             )
         try:
             r = httpx.get(f"{E2E_BASE_URL}/health", timeout=1.0)
-            if r.status_code == 200:
+            if r.status_code == 200 and all(t.get("initialized") for t in r.json().get("targets", [])):
                 return proc
         except httpx.HTTPError:
             pass
