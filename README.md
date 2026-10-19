@@ -2,6 +2,23 @@
 
 Unofficial maintained fork of [OpenMaskit](https://github.com/MaskitMCP/openmaskit). Not affiliated with or endorsed by its maintainers. See [FORK.md](FORK.md) for the fixes, update process and recovery.
 
+The privacy fixes apply to every configured MCP server. Thunderbird is one use case. This fork preserves empty fields, withholds oversized responses that require field masking, and reloads saved rules at startup.
+
+## Run this fork
+
+```sh
+git clone https://github.com/ricardomartins-gravitee/openmaskit.git
+cd openmaskit
+uv sync --frozen --python 3.12
+uv run --frozen mcp-privacy-proxy
+```
+
+Existing `openmaskit.yaml`, environment variables and `~/.openmaskit/` storage remain compatible. The command and Python distribution are named `mcp-privacy-proxy`; the Python module remains `openmaskit`.
+
+## Upstream reference documentation
+
+The material below is retained from upstream for reference and attribution. Its PyPI installation commands install upstream OpenMaskit. Use the instructions above to run this fork.
+
 <p align="center">
   <img src="assets/icon.png" alt="OpenMaskit" width="120">
 </p>

@@ -35,9 +35,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/MaskitMCP/openmaskit"
-Repository = "https://github.com/MaskitMCP/openmaskit"
-Issues = "https://github.com/MaskitMCP/openmaskit/issues"
+Homepage = "https://github.com/ricardomartins-gravitee/openmaskit"
+Repository = "https://github.com/ricardomartins-gravitee/openmaskit"
+Issues = "https://github.com/ricardomartins-gravitee/openmaskit/issues"
 
 [project.scripts]
 mcp-privacy-proxy = "openmaskit.__main__:main"
