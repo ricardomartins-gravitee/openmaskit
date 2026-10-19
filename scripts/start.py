@@ -7,6 +7,11 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / '.runtime'
+settings_path = STATE / 'launch-settings.json'
+if settings_path.exists():
+    for key, value in json.loads(settings_path.read_text()).items():
+        if key == 'OPENMASKIT_DISABLE_MARKETPLACE':
+            os.environ.setdefault(key, value)
 release = (STATE / 'current').resolve(strict=True)
 executable = release / 'source/.venv/bin/python'
 command = [str(executable), '-m', 'openmaskit', *sys.argv[1:]]

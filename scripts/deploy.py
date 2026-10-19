@@ -123,6 +123,9 @@ def main():
     commit = git('rev-parse', 'HEAD', capture=True)
     current = json.loads(STATUS.read_text()) if STATUS.exists() else None
     if current and current['commit'] == commit and not args.stage_only:
+        with urllib.request.urlopen('http://127.0.0.1:9473/api/config', timeout=2) as response:
+            if json.load(response)['current_version'] != current['version']:
+                raise RuntimeError('The recorded release is not the running service')
         print(json.dumps({'status': 'already_deployed', 'commit': commit}))
         return
     release = STATE / 'releases' / commit
@@ -191,6 +194,10 @@ def main():
               'saved_rules_verified': sum(len(r) for r in expected_rules.values()),
               'deployed_at': datetime.now(timezone.utc).isoformat()}
     atomic_json(STATUS, status)
+    # Retain the existing non-secret opt-out preference across manual starts.
+    if 'OPENMASKIT_DISABLE_MARKETPLACE' in env:
+        atomic_json(STATE / 'launch-settings.json', {
+            'OPENMASKIT_DISABLE_MARKETPLACE': env['OPENMASKIT_DISABLE_MARKETPLACE']})
     print(json.dumps(status, indent=2))
 
 
