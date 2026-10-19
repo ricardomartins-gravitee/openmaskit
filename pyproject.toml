@@ -1,7 +1,7 @@
 # Modified in the unofficial fork: distinct distribution and reusable privacy checks.
 [project]
 name = "mcp-privacy-proxy"
-version = "0.6.1+privacy.3"
+version = "0.6.1+privacy.4"
 description = "Drop-in MCP proxy that keeps your secrets out of the context window"
 readme = "README.md"
 authors = [

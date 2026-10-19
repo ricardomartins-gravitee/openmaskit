@@ -510,7 +510,8 @@ code {
     transition: all var(--transition-fast);
 }
 
-.form-row select {
+.form-row select,
+.privacy-panel select {
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238892a4' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
@@ -519,7 +520,8 @@ code {
     cursor: pointer;
 }
 
-.form-row select option {
+.form-row select option,
+.privacy-panel select option {
     background: var(--bg-surface);
     color: var(--text-primary);
 }
@@ -2195,8 +2197,10 @@ tr:target {
     border-color: var(--accent);
 }
 
-.modal-field input {
-    background: var(--bg-input);
+.modal-field input,
+.privacy-panel .modal-field select,
+.privacy-panel .modal-field textarea {
+    background-color: var(--bg-input);
     border: 1px solid var(--border-default);
     color: var(--text-primary);
     padding: 0.6rem 0.875rem;
@@ -2206,7 +2210,9 @@ tr:target {
     transition: all var(--transition-fast);
 }
 
-.modal-field input:focus {
+.modal-field input:focus,
+.privacy-panel .modal-field select:focus,
+.privacy-panel .modal-field textarea:focus {
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-dim);
@@ -5186,6 +5192,7 @@ code {
 .privacy-panel td button { margin: .15rem; }
 .privacy-panel .modal-field { margin-bottom: 1rem; }
 .privacy-panel select, .privacy-panel textarea { width: 100%; }
+.privacy-panel .modal-field select { color-scheme: dark; padding-right: 2rem; }
 .privacy-panel summary { cursor: pointer; margin: 1rem 0; font-weight: 600; }
 .privacy-error { color: var(--danger, #f85149); overflow-wrap: anywhere; }
 .privacy-preview { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 15rem; overflow: auto; padding: 1rem; }
