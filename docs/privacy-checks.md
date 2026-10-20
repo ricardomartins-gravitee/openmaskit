@@ -31,6 +31,53 @@ Presidio installation and model provisioning are separate manual steps. See the 
 
 This initial implementation supports loopback HTTP(S) endpoints only. Raw response text is sent to the configured local analyzer. Environment HTTP proxies and HTTP redirects are disabled. Remote/cloud analyzers, endpoint credentials and managed analyzer startup are not included.
 
+### Start Presidio with Docker Compose
+
+Open Docker Desktop, then run these commands from the root of this fork:
+
+```sh
+docker compose -f compose.presidio.yaml up -d --wait --wait-timeout 300
+```
+
+The optional [Compose file](../compose.presidio.yaml) downloads the official
+`ghcr.io/data-privacy-stack/presidio-analyzer:2.2.364` image and waits for its
+`/health` endpoint. It publishes only `127.0.0.1:5002`, uses the image's default
+English model, and has no automatic restart policy. No local maintenance job
+is installed. The first image download can take several minutes. This runs
+Presidio beside the existing OpenMaskit service; no OpenMaskit restart is needed.
+Only the Analyzer is needed: OpenMaskit performs aliasing and redaction itself.
+
+In **Analyzers → Add Analyzer**, enter:
+
+| Field | Value |
+|---|---|
+| Name | Local Presidio |
+| Type | Presidio |
+| Local service URL | `http://127.0.0.1:5002` |
+
+Save, then choose **Check Connection**. On the analyzer card, choose **Add Check**:
+name `People's names`, Detect `PERSON`, language `en`, minimum confidence `0.7`,
+action **Replace with reversible aliases**, and leave structured fields empty.
+Use **Preview** with `John Smith met Sarah Johnson yesterday.`, then save.
+Enable the saved check from the relevant MCP server's **Privacy Checks → Add Check**.
+
+To stop and remove only this Compose setup:
+
+```sh
+docker compose -f compose.presidio.yaml down
+```
+
+Run the `up` command again to start it later. If an assigned analyzer is stopped,
+OpenMaskit withholds responses requiring that check until it becomes available
+or you pause that assignment.
+
+If port 5002 is occupied by the standalone Presidio container from the earlier
+instructions, stop that container first with `docker stop presidio-analyzer`.
+The Compose setup does not replace or delete an existing standalone container.
+
+The image and API are documented in the [official installation guide](https://presidio.dataprivacystack.org/installation/)
+and [Presidio Analyzer source](https://github.com/data-privacy-stack/presidio/blob/2.2.364/presidio-analyzer/app.py).
+
 ## Other analyzers
 
 The adapter registry separates detection from alias generation. The **Compatible analyzer** option calls the exact configured local URL with:
