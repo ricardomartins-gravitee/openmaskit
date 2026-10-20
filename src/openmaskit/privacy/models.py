@@ -2,11 +2,56 @@
 from __future__ import annotations
 
 import ipaddress
+import os
 import re
 from typing import Literal
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+ALLOWED_ANALYZER_ORIGINS_ENV = "OPENMASKIT_ANALYZER_ALLOWED_ORIGINS"
+
+
+def _analyzer_origin(value: str, *, origin_only: bool = False):
+    if any(ord(char) <= 32 or ord(char) == 127 for char in value):
+        raise ValueError("Analyzer URLs cannot contain whitespace or control characters")
+    try:
+        parts = urlsplit(value)
+        port = parts.port
+    except ValueError as exc:
+        raise ValueError("Invalid analyzer URL") from exc
+    if (parts.scheme not in ("http", "https") or not parts.hostname
+            or parts.username is not None or parts.password is not None
+            or parts.query or parts.fragment or port == 0 or "*" in parts.hostname):
+        raise ValueError("Use an HTTP(S) analyzer URL without credentials, query or fragment")
+    if origin_only and parts.path not in ("", "/"):
+        raise ValueError("Allowed analyzer origins cannot include a path")
+    return parts, (parts.scheme, parts.hostname, port or (443 if parts.scheme == "https" else 80))
+
+
+def validate_analyzer_endpoint(value: str) -> str:
+    """Loopback by default; operators may explicitly allow exact service origins.
+
+    The allowlist is deployment configuration, never writable by dashboard/MCP
+    callers. No wildcard, private-network-wide or redirect exception is added.
+    """
+    parts, origin = _analyzer_origin(value)
+    try:
+        local = parts.hostname == "localhost" or ipaddress.ip_address(parts.hostname).is_loopback
+    except ValueError:
+        local = False
+    if local:
+        return value
+    configured = os.environ.get(ALLOWED_ANALYZER_ORIGINS_ENV, "")
+    try:
+        allowed = {_analyzer_origin(item.strip(), origin_only=True)[1]
+                   for item in configured.split(",") if item.strip()}
+    except ValueError as exc:
+        raise ValueError("Invalid analyzer origin allowlist configuration") from exc
+    if origin not in allowed:
+        raise ValueError("Use localhost, a loopback IP, or an explicitly allowed analyzer service origin")
+    return value
 
 
 class ProviderConfig(BaseModel):
@@ -18,19 +63,7 @@ class ProviderConfig(BaseModel):
     @field_validator("endpoint")
     @classmethod
     def local_endpoint(cls, value: str) -> str:
-        parts = urlsplit(value)
-        if parts.scheme not in ("http", "https") or parts.username or parts.password:
-            raise ValueError("Use a local HTTP(S) analyzer URL without credentials")
-        if parts.query or parts.fragment or not parts.hostname:
-            raise ValueError("Analyzer URL cannot contain a query or fragment")
-        try:
-            local = parts.hostname == "localhost" or ipaddress.ip_address(parts.hostname).is_loopback
-            port = parts.port
-        except ValueError as exc:
-            raise ValueError("Use localhost or a loopback IP address") from exc
-        if not local or port == 0:
-            raise ValueError("Only local analyzers are supported")
-        return value
+        return validate_analyzer_endpoint(value)
 
 
 class CheckConfig(BaseModel):

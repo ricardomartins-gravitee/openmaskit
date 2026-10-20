@@ -212,12 +212,22 @@ A few things worth knowing about:
 
 ## Docker
 
-```bash
-docker build -t openmaskit .
-docker run -p 9473:9473 -p 9474:9474 openmaskit
+This fork provides a combined OpenMaskit + Presidio deployment:
+
+```sh
+mkdir -p .runtime
+cp .env.container.example .runtime/container.env
+docker compose --env-file .runtime/container.env up -d --wait --wait-timeout 300
 ```
 
-The container supports HTTP-based MCP servers. For stdio servers (`uvx`, `npx`), run OpenMaskit natively.
+Open **http://127.0.0.1:9483**. The example uses separate ports and a fresh
+persistent volume for testing beside a native installation. Add Presidio with
+`http://presidio-analyzer:3000` in this container's analyzer library.
+See [container setup, persistence, updates and publishing](docs/containers.md).
+
+Images are published for amd64 and arm64 under
+`ghcr.io/ricardomartins-gravitee/openmaskit`. Startup and updates are manual.
+Host-dependent MCP launchers need a separate connection design before migration.
 
 ## Data safety
 

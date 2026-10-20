@@ -202,7 +202,11 @@ async def custom_target_create(request: Request):
     error_msg = None
     if manager:
         try:
-            await manager.add_target(server_id, config)
+            # The stored form wraps env/headers with type/encryption metadata.
+            # Runtime connections need the same decrypted, flat view as restart/update.
+            record = await store.get_server(server_id)
+            runtime_config = load_runtime_config(record["config_json"])
+            await manager.add_target(server_id, runtime_config)
             connected = True
         except Exception as exc:
             logger.warning("Failed to connect custom target %s: %s", server_id, exc)

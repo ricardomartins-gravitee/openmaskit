@@ -1,0 +1,52 @@
+# Optional container deployment; native installation and its data are separate.
+# OpenMaskit ports are loopback-only. Presidio is reachable only on a private network.
+name: openmaskit-container
+
+services:
+  openmaskit:
+    image: ${OPENMASKIT_IMAGE:-ghcr.io/ricardomartins-gravitee/openmaskit:0.6.1-privacy.9}
+    restart: "no"
+    init: true
+    stop_grace_period: 45s
+    environment:
+      OPENMASKIT_HOST: 0.0.0.0
+      OPENMASKIT_WEB_PORT: ${OPENMASKIT_WEB_PORT:-9473}
+      OPENMASKIT_MCP_PORT: ${OPENMASKIT_MCP_PORT:-9474}
+      OPENMASKIT_ANALYZER_ALLOWED_ORIGINS: http://presidio-analyzer:3000
+      OPENMASKIT_DISABLE_MARKETPLACE: ${OPENMASKIT_DISABLE_MARKETPLACE:-1}
+    command:
+      - --web-port
+      - "${OPENMASKIT_WEB_PORT:-9473}"
+      - --mcp-port
+      - "${OPENMASKIT_MCP_PORT:-9474}"
+    ports:
+      - "127.0.0.1:${OPENMASKIT_WEB_PORT:-9473}:${OPENMASKIT_WEB_PORT:-9473}"
+      - "127.0.0.1:${OPENMASKIT_MCP_PORT:-9474}:${OPENMASKIT_MCP_PORT:-9474}"
+    volumes:
+      - openmaskit-data:/home/openmaskit/.openmaskit
+    depends_on:
+      presidio-analyzer:
+        condition: service_healthy
+    networks:
+      - default
+      - analyzers
+
+  presidio-analyzer:
+    image: ghcr.io/data-privacy-stack/presidio-analyzer:2.2.364
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/health', timeout=5).close()"]
+      interval: 10s
+      timeout: 6s
+      start_period: 60s
+      retries: 12
+    networks:
+      - analyzers
+
+volumes:
+  openmaskit-data:
+
+networks:
+  default:
+  analyzers:
+    internal: true
