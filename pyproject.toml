@@ -1,7 +1,7 @@
 # Modified in the unofficial fork: reusable privacy checks and maintained privacy fixes.
 [project]
 name = "openmaskit"
-version = "0.6.1+privacy.8"
+version = "0.6.1+privacy.9"
 description = "Drop-in MCP proxy that keeps your secrets out of the context window"
 readme = "README.md"
 authors = [

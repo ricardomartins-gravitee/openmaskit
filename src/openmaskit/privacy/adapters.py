@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 import httpx
 
-from openmaskit.privacy.models import CheckConfig, ProviderConfig
+from openmaskit.privacy.models import CheckConfig, ProviderConfig, validate_analyzer_endpoint
 
 MAX_TEXT = 100_000
 MAX_RESPONSE = 1_048_576
@@ -38,7 +38,10 @@ class HttpSpanAdapter:
                       check: CheckConfig, text: str) -> list[Finding]:
         if len(text) > MAX_TEXT:
             raise CheckFailure("Text exceeds analyzer limit")
-        endpoint = provider.endpoint
+        try:
+            endpoint = validate_analyzer_endpoint(provider.endpoint)
+        except ValueError as exc:
+            raise CheckFailure("Analyzer endpoint is not allowed by deployment policy") from exc
         if provider.adapter == "presidio":
             endpoint = endpoint.rstrip("/")
             if not endpoint.endswith("/analyze"):

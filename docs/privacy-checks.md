@@ -29,7 +29,7 @@ Register an already running local Presidio Analyzer, for example `http://127.0.0
 
 Presidio installation and model provisioning are separate manual steps. See the [official installation guide](https://presidio.dataprivacystack.org/installation/). Registering an analyzer does not install packages, download models, start a process or create a scheduled task. The analyzer needs to be available when a configured MCP response is checked.
 
-This initial implementation supports loopback HTTP(S) endpoints only. Raw response text is sent to the configured local analyzer. Environment HTTP proxies and HTTP redirects are disabled. Remote/cloud analyzers, endpoint credentials and managed analyzer startup are not included.
+Native installations support loopback HTTP(S) endpoints by default. Container deployments can explicitly allow exact private-service origins through the operator-controlled `OPENMASKIT_ANALYZER_ALLOWED_ORIGINS` environment variable; see [container setup](containers.md). Raw response text is sent to the configured local analyzer. Environment HTTP proxies and HTTP redirects are disabled. Remote/cloud analyzers, endpoint credentials and managed analyzer startup are not included.
 
 ### Start Presidio with Docker Compose
 

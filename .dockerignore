@@ -1,50 +1,13 @@
-# Version control
-.git
-.gitignore
-
-# Python virtual environment
-.venv
-venv
-env
-*.egg-info
-
-# Python cache
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-.Python
-
-# Testing
-tests
-.pytest_cache
-.coverage
-htmlcov
-.tox
-
-# IDE / Editor
-.vscode
-.idea
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Claude Code
-.claude
-
-# CI/CD
-.github
-
-# Documentation (not needed in image)
-CONTRIBUTING.md
-
-# Misc
-*.log
-*.db
-*.sqlite
-.env
-.env.*
-
-.codegraph
-bench_unmask.py
+# Only package sources enter the build context. In particular, never send
+# .runtime/, credentials, local databases, backups or real mailbox data.
+**
+!pyproject.toml
+!uv.lock
+!README.md
+!LICENSE
+!NOTICE
+!src/
+!src/**
+**/__pycache__/
+**/*.pyc
+**/*.pyo

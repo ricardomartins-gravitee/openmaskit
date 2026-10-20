@@ -21,6 +21,8 @@ The GitHub workflow checks upstream every six hours and publishes tested source 
 
 ## Deployment
 
+An optional [container deployment](docs/containers.md) packages OpenMaskit and Presidio with persistent storage. GitHub builds and validates native amd64/arm64 images before publishing versioned GHCR manifests. Local container startup and updates remain manual.
+
 The service runs from a Git commit snapshot under `.runtime/releases/`, installed normally from the frozen lockfile without editable source. `.runtime/current` points to the selected release. Source edits in this checkout cannot mutate the installed release. Before replacement, the service shuts down gracefully and the application database is backed up locally. The new service must report the expected package version and restore every saved rule. A failed rollout restores the previous service and database automatically.
 
 The first migration uses `scripts/deploy.py --adopt-pid <current-service-pid>`. Later deployments use `scripts/deploy.py`. `bin/openmaskit` starts the selected release manually. A different process at the recorded PID is never stopped.

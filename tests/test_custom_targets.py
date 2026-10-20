@@ -446,3 +446,26 @@ class TestApiTargetsEditable:
         record = await state.store.get_server("slack")
         assert record is not None
         assert load_runtime_config(record["config_json"])["url"] == "https://mcp.slack.com/mcp"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("transport, field, value", [
+    ("stdio", "env", {"TOKEN": {"value": "synthetic-secret-only", "type": "secret"}}),
+    ("http", "headers", {"Authorization": {"value": "Bearer synthetic-secret-only", "type": "secret"}}),
+])
+async def test_create_connects_with_flat_runtime_secrets(client, state, transport, field, value):
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    manager = SimpleNamespace(add_target=AsyncMock())
+    state.target_manager = manager
+    body = {"name": "Runtime fixture", "transport": transport, field: value}
+    body.update({"command": "python", "args": []} if transport == "stdio"
+                else {"url": "https://synthetic.example/mcp"})
+    response = await client.post("/api/targets/custom", json=body)
+    assert response.status_code == 201 and response.json()["connected"]
+    identifier, runtime = manager.add_target.await_args.args
+    assert identifier == "runtime-fixture"
+    assert runtime[field] == {key: item["value"] for key, item in value.items()}
+    stored = await state.store.get_server(identifier)
+    assert "synthetic-secret-only" not in stored["config_json"]
+    assert "synthetic-secret-only" not in response.text
