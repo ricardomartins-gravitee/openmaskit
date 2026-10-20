@@ -104,7 +104,7 @@ jobs:
           uv run --frozen python scripts/privacy_smoke.py
       - name: Build native architecture image
         run: >-
-          docker build --pull --tag "$CANDIDATE"
+          docker buildx build --load --provenance=false --pull --tag "$CANDIDATE"
           --build-arg "OPENMASKIT_VERSION=$PACKAGE_VERSION"
           --build-arg "VCS_REF=$SOURCE_SHA" .
       - name: Validate Compose deployment with real Presidio and synthetic MCP
