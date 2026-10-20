@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+For this maintained fork, also read [AGENTS.md](AGENTS.md) before beginning work.
+It connects this shared guidance to other coding agents and defines the fork's
+naming, privacy, maintenance and deployment requirements. Read each referenced
+instruction file once per conversation; do not recursively re-read the links.
+
 ## What is OpenMaskit
 
 OpenMaskit is an MCP (Model Context Protocol) server proxy that sits between an AI host (e.g., Claude Code) and a real MCP server. It intercepts tool call responses to mask sensitive field values (replacing `prod-db.internal.net` with `host_1`) and unmasks them when the agent sends those aliases back in tool call arguments.
