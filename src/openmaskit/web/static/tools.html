@@ -114,7 +114,7 @@
                                 <td><code x-text="rule.field_path"></code></td>
                                 <td x-text="rule.alias_prefix || ('_masked_' + rule.field_path.split('.').pop())"></td>
                                 <td>
-                                    <button class="btn-danger" @click="deleteRule(rule.id)" :disabled="rule.deleting" aria-label="Delete rule">
+                                    <button class="btn-danger" @click="deleteRule(rule.id)" :disabled="!!rule.deleting" aria-label="Delete rule">
                                         <span x-show="!rule.deleting">Delete</span>
                                         <span x-show="rule.deleting" class="btn-loading">
                                             <span class="spinner spinner-sm"></span>
@@ -146,7 +146,7 @@
                                 <td x-text="mapper.alias_prefix"></td>
                                 <td x-text="mapper.order"></td>
                                 <td>
-                                    <button class="btn-danger" @click="deleteMapper(mapper.id)" :disabled="mapper.deleting" aria-label="Delete mapper">
+                                    <button class="btn-danger" @click="deleteMapper(mapper.id)" :disabled="!!mapper.deleting" aria-label="Delete mapper">
                                         <span x-show="!mapper.deleting">Delete</span>
                                         <span x-show="mapper.deleting" class="btn-loading">
                                             <span class="spinner spinner-sm"></span>
@@ -530,14 +530,14 @@ function toolsPage() {
             const res = await fetch(`${this.apiBase()}/rules`);
             if (!res.ok) throw new Error('Failed to load rules');
             const data = await res.json();
-            this.rules = data.rules;
+            this.rules = data.rules.map(rule => ({ ...rule, deleting: false }));
         },
 
         async loadMappers() {
             const res = await fetch(`${this.apiBase()}/mappers`);
             if (!res.ok) throw new Error('Failed to load mappers');
             const data = await res.json();
-            this.mappers = data.mappers;
+            this.mappers = data.mappers.map(mapper => ({ ...mapper, deleting: false }));
         },
 
         async loadGuardrails() {
@@ -604,31 +604,39 @@ function toolsPage() {
         },
 
         async deleteRule(id) {
-            if (!confirm('Delete this rule?')) return;
-            // Find the rule and add deleting state
-            const rule = this.rules.find(r => r.id === id);
+            const rule = this.rules.find(item => item.id === id);
+            if (rule?.deleting || !confirm('Delete this rule?')) return;
             if (rule) rule.deleting = true;
             try {
-                await fetch(`${this.apiBase()}/rules/${id}/delete`, { method: 'DELETE' });
+                const res = await fetch(`${this.apiBase()}/rules/${id}/delete`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.error || 'Failed to delete rule');
+                }
                 await this.loadRules();
                 this.showToast('Rule deleted');
             } catch (e) {
-                this.showToast('Failed to delete rule', 'error');
+                this.showToast(e.message || 'Failed to delete rule', 'error');
+            } finally {
                 if (rule) rule.deleting = false;
             }
         },
 
         async deleteMapper(id) {
-            if (!confirm('Delete this mapper?')) return;
-            // Find the mapper and add deleting state
-            const mapper = this.mappers.find(m => m.id === id);
+            const mapper = this.mappers.find(item => item.id === id);
+            if (mapper?.deleting || !confirm('Delete this mapper?')) return;
             if (mapper) mapper.deleting = true;
             try {
-                await fetch(`${this.apiBase()}/mappers/${id}/delete`, { method: 'DELETE' });
+                const res = await fetch(`${this.apiBase()}/mappers/${id}/delete`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.error || 'Failed to delete mapper');
+                }
                 await this.loadMappers();
                 this.showToast('Mapper deleted');
             } catch (e) {
-                this.showToast('Failed to delete mapper', 'error');
+                this.showToast(e.message || 'Failed to delete mapper', 'error');
+            } finally {
                 if (mapper) mapper.deleting = false;
             }
         },

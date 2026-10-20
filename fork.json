@@ -3,6 +3,6 @@
   "upstream": "https://github.com/MaskitMCP/openmaskit.git",
   "upstream_branch": "main",
   "upstream_commit": "07f828a65b742140f4c47edb7c216d40aeb86c76",
-  "privacy_revision": 6,
+  "privacy_revision": 7,
   "dependencies_refreshed": "2026-10-19"
 }
