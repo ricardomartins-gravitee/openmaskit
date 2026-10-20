@@ -733,7 +733,7 @@ cli = [
 
 [[package]]
 name = "openmaskit"
-version = "0.6.1+privacy.6"
+version = "0.6.1+privacy.7"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
