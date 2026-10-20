@@ -51,7 +51,7 @@ function privacyChecksPanel() {
         check(id) { return this.checks.find(c => c.id === id); },
         bindingFor(id) { return this.assignments.find(a => a.check_id === id); },
         providerName(id) { return this.providers.find(p => p.id === id)?.name || 'Unavailable analyzer'; },
-        scopeLabel(item) { return item ? (item.scope === null ? 'Shared' : 'Only this server') : 'Unavailable'; },
+        scopeLabel(item) { return item ? (item.scope === null ? 'Shared' : 'Only this MCP') : 'Unavailable'; },
         actionLabel(action) { return {mask: 'Reversible alias', redact: 'Redact', block: 'Block response'}[action] || action; },
         openProvider(provider) {
             this.editing = provider?.id || null;

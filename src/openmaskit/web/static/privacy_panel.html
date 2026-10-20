@@ -30,9 +30,9 @@
 
     <div class="panel-header privacy-definitions-header" x-show="scope">
         <h3>Analyzers and Check Definitions</h3>
-        <button class="btn-small" @click="openProvider()" :disabled="busy">Add Server Analyzer</button>
+        <button class="btn-small" @click="openProvider()" :disabled="busy">Add MCP-only Analyzer</button>
     </div>
-    <p class="muted" x-show="scope">Reuse an analyzer's existing checks or create a check visible only on this server. Shared definitions are managed in the analyzer library.</p>
+    <p class="muted" x-show="scope">Reuse an analyzer's existing checks, or create analyzers and checks visible only on this MCP server. Shared definitions are managed in the analyzer library.</p>
     <p class="muted" x-show="!loading && !providers.length">No analyzers configured. Add an analyzer to start creating checks. Registering one does not install software.</p>
 
     <div class="privacy-analyzer-list">
@@ -52,7 +52,7 @@
                         <button class="btn-small" x-show="provider.scope === scope" @click="openProvider(provider)" :disabled="busy">Edit Analyzer</button>
                         <button class="btn-danger" x-show="provider.scope === scope" @click="remove('providers', provider)" :disabled="busy">Delete Analyzer</button>
                         <button class="btn-primary" @click="openCheck(null, provider.id)" :disabled="busy"
-                                x-text="scope ? 'Create Server-only Check' : 'Add Check'"></button>
+                                x-text="scope ? 'Create MCP-only Check' : 'Add Check'"></button>
                     </div>
                 </div>
                 <h4 class="privacy-checks-heading" x-text="'Checks (' + checksFor(provider.id).length + ')'"></h4>
@@ -78,14 +78,14 @@
     <p class="muted privacy-note">These checks inspect text, including structured fields and message bodies. Images, audio and binary attachments are not inspected. If a required analyzer fails, the response is withheld.</p>
 
     <div x-show="modal" x-cloak class="modal-backdrop" @keydown.escape.window="if (!busy) modal = ''">
-        <div class="modal modal-target" @click.outside="if (!busy) modal = ''" role="dialog" aria-modal="true" :aria-label="modal === 'provider' ? 'Analyzer settings' : modal === 'assignment' ? 'Server check settings' : 'Check settings'">
+        <div class="modal modal-target" @click.outside="if (!busy) modal = ''" role="dialog" aria-modal="true" :aria-label="modal === 'provider' ? (scope ? 'MCP-only analyzer settings' : 'Analyzer settings') : modal === 'assignment' ? 'Server check settings' : 'Check settings'">
             <div class="modal-header-bar">
-                <h3 x-text="modal === 'provider' ? (editing ? 'Edit Analyzer' : 'Add Analyzer') : modal === 'assignment' ? (editing ? 'Edit Server Check' : 'Add Check to this Server') : (editing ? 'Edit Check' : (scope ? 'Create Server-only Check' : 'Add Check'))"></h3>
+                <h3 x-text="modal === 'provider' ? (scope ? (editing ? 'Edit MCP-only Analyzer' : 'Add MCP-only Analyzer') : (editing ? 'Edit Analyzer' : 'Add Analyzer')) : modal === 'assignment' ? (editing ? 'Edit Server Check' : 'Add Check to this Server') : (editing ? (scope ? 'Edit MCP-only Check' : 'Edit Check') : (scope ? 'Create MCP-only Check' : 'Add Check'))"></h3>
                 <button class="modal-close-btn" @click="modal = ''" :disabled="busy" aria-label="Close privacy check settings">×</button>
             </div>
             <form @submit.prevent="modal === 'provider' ? saveProvider() : modal === 'assignment' ? saveAssignment() : saveCheck()">
                 <div class="modal-body">
-                    <p class="muted" x-show="modal !== 'assignment'" x-text="scope ? 'Visible only within this server.' : 'Available for reuse across your MCP servers.'"></p>
+                    <p class="muted" x-show="modal !== 'assignment'" x-text="scope ? 'Visible only within this MCP server.' : 'Available for reuse across your MCP servers.'"></p>
                     <p x-show="editing && !scope && modal === 'check'" class="muted">Changes apply to every server using this shared check.</p>
                     <p x-show="error" role="alert" class="privacy-error" x-text="error"></p>
                     <div x-show="modal === 'provider'">
@@ -102,14 +102,14 @@
                         <label class="modal-field">Check<select x-model="assignmentForm.check_id" :required="modal === 'assignment'">
                             <option value="">Choose a check</option><template x-for="item in availableChecks" :key="item.id"><option :value="item.id" x-text="item.name + ' (' + scopeLabel(item) + ')'"></option></template>
                         </select></label>
-                        <p class="muted" x-show="selectedAnalyzer && !availableChecks.length">This analyzer has no checks in this scope. Add a shared check in the library, or create a server-only check.</p>
+                        <p class="muted" x-show="selectedAnalyzer && !availableChecks.length">This analyzer has no checks in this scope. Add a shared check in the library, or create an MCP-only check.</p>
                         <p class="muted privacy-selected-check" x-show="selectedDefinition" x-text="selectedDefinition ? selectedDefinition.entities.join(', ') + ' · ' + actionLabel(selectedDefinition.action) + ' · ' + selectedDefinition.language : ''"></p>
                         <label class="modal-field">Tools<select x-model="assignmentForm.tool_name">
                             <option value="*">All tools on this server</option>
                             <template x-for="tool in tools" :key="tool.name"><option :value="tool.name" x-text="tool.name"></option></template>
                             <template x-if="assignmentForm.tool_name && assignmentForm.tool_name !== '*' && !tools.some(t => t.name === assignmentForm.tool_name)"><option :value="assignmentForm.tool_name" x-text="assignmentForm.tool_name + ' (unavailable)'"></option></template>
                         </select></label>
-                        <button type="button" class="btn-small" @click="openCheck(null, selectedAnalyzer)" :disabled="busy || !selectedAnalyzer">Create Server-only Check</button>
+                        <button type="button" class="btn-small" @click="openCheck(null, selectedAnalyzer)" :disabled="busy || !selectedAnalyzer">Create MCP-only Check</button>
                     </div>
                     <div x-show="modal === 'check'">
                         <label class="modal-field">Analyzer<input readonly :value="providerName(checkForm.provider_id)"></label>

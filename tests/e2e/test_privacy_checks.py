@@ -37,7 +37,9 @@ def analyzer_card(page, name):
 
 
 def create_check(page, name, local=False, analyzer='Local Presidio'):
-    analyzer_card(page, analyzer).get_by_role('button', name='Create Server-only Check' if local else 'Add Check', exact=True).click()
+    analyzer_card(page, analyzer).get_by_role('button', name='Create MCP-only Check' if local else 'Add Check', exact=True).click()
+    if local:
+        expect(modal(page).get_by_role('heading', name='Create MCP-only Check', exact=True)).to_be_visible()
     expect(modal(page).get_by_role('textbox', name='Analyzer', exact=True)).to_have_value(analyzer)
     expect(modal(page).get_by_role('textbox', name='Analyzer', exact=True)).to_have_attribute('readonly', '')
     modal(page).get_by_role('textbox', name='Name', exact=True).fill(name)
@@ -75,7 +77,7 @@ def test_shared_and_local_dashboard_lifecycle(dashboard_page, real_presidio, tmp
     page.goto(E2E_BASE_URL + '/targets/mail/tools')
     expect(panel(page).get_by_role('cell', name='Enabled', exact=True)).to_be_visible()
     create_check(page, 'Mail only', local=True)
-    expect(panel(page).locator('.privacy-assignments').get_by_role('cell', name='Only this server', exact=True)).to_be_visible()
+    expect(panel(page).locator('.privacy-assignments').get_by_role('cell', name='Only this MCP', exact=True)).to_be_visible()
     with api_client() as client:
         assert 'Mail only' not in client.get('/api/privacy').text
         assert 'Mail only' not in client.get('/api/targets/calendar/privacy').text
@@ -215,7 +217,7 @@ def test_privacy_dialog_controls_match_theme(dashboard_page, tmp_path):
         if scope == 'server':
             install_stub_via_api('mail')
             page.goto(E2E_BASE_URL + '/targets/mail/tools')
-            analyzer_card(page, 'Synthetic analyzer').get_by_role('button', name='Create Server-only Check', exact=True).click()
+            analyzer_card(page, 'Synthetic analyzer').get_by_role('button', name='Create MCP-only Check', exact=True).click()
         else:
             analyzer_card(page, 'Synthetic analyzer').get_by_role('button', name='Add Check', exact=True).click()
         modal(page).get_by_text('Preview', exact=True).click()
@@ -319,7 +321,7 @@ def test_server_check_retry_does_not_duplicate_definition(dashboard_page):
     with api_client() as client:
         client.post('/api/privacy/providers/create', json={'name': 'Shared engine', 'endpoint': 'http://127.0.0.1:5002'}).raise_for_status()
     page.goto(E2E_BASE_URL + '/targets/mail/tools')
-    analyzer_card(page, 'Shared engine').get_by_role('button', name='Create Server-only Check', exact=True).click()
+    analyzer_card(page, 'Shared engine').get_by_role('button', name='Create MCP-only Check', exact=True).click()
     modal(page).get_by_role('textbox', name='Name', exact=True).fill('Retry check')
     page.route('**/api/targets/mail/privacy/assignments/create',
         lambda route: route.fulfill(status=500, json={'error': 'Temporary assignment failure'}), times=1)
@@ -338,11 +340,13 @@ def test_server_check_retry_does_not_duplicate_definition(dashboard_page):
         assert len(state['assignments']) == 1 and state['assignments'][0]['check_id'] == identifier
         assert client.get('/api/privacy').json()['checks'] == []
     # An analyzer created on this MCP page also stays local to this server.
-    panel(page).get_by_role('button', name='Add Server Analyzer', exact=True).click()
+    panel(page).get_by_role('button', name='Add MCP-only Analyzer', exact=True).click()
+    expect(modal(page).get_by_role('heading', name='Add MCP-only Analyzer', exact=True)).to_be_visible()
+    expect(modal(page)).to_contain_text('Visible only within this MCP server.')
     modal(page).get_by_role('textbox', name='Name', exact=True).fill('Mail engine')
     modal(page).get_by_label('Local service URL').fill('http://127.0.0.1:5002')
     modal(page).get_by_role('button', name='Save', exact=True).click()
     expect(modal(page)).not_to_be_visible()
-    expect(analyzer_card(page, 'Mail engine')).to_contain_text('Only this server')
+    expect(analyzer_card(page, 'Mail engine')).to_contain_text('Only this MCP')
     with api_client() as client:
         assert 'Mail engine' not in client.get('/api/privacy').text
