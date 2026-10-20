@@ -1,0 +1,19 @@
+# Local Presidio Analyzer for the OpenMaskit dashboard.
+# Start manually: docker compose -f compose.presidio.yaml up -d --wait --wait-timeout 300
+# Stop/remove:   docker compose -f compose.presidio.yaml down
+services:
+  presidio-analyzer:
+    image: ghcr.io/data-privacy-stack/presidio-analyzer:2.2.364
+    restart: "no"
+    ports:
+      - "127.0.0.1:5002:3000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/health', timeout=5).close()"
+      interval: 10s
+      timeout: 6s
+      start_period: 60s
+      retries: 12
