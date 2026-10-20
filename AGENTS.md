@@ -2,6 +2,21 @@
 
 This repository is an unofficial maintained fork of MaskitMCP/openmaskit.
 
+## Required project guidance
+
+Before investigating, reviewing or changing this repository, read these files in full once per conversation:
+
+1. [CLAUDE.md](CLAUDE.md) — shared project architecture, local deployment/threat model, terminology, protocol invariants, persistence and development guidance. These instructions apply to every coding agent working on this fork.
+2. [.claude/CLAUDE.md](.claude/CLAUDE.md) — CodeGraph workflow. Use it when the CodeGraph tools and an initialized index are actually available. Otherwise use native source search/read tools; do not install tools or initialize an index unless the user requests it.
+
+Keep the detailed guidance in those existing files rather than copying it here, so upstream documentation updates remain effective. Read each file once; following links back here does not require another reading cycle.
+
+For fork maintenance and deployment, also read [FORK.md](FORK.md). For analyzer/check work, read [docs/privacy-checks.md](docs/privacy-checks.md). Resolve stale architectural descriptions and example routes against the current source before relying on them.
+
+The fork-specific instructions below take precedence where they differ from those shared documents. User instructions and system/developer instructions retain their normal priority. In particular, upstream development commands do not authorize production deployment, publication to upstream package registries, local scheduled jobs or changes to real mailbox data.
+
+## Fork maintenance instructions
+
 - Preserve sender/recipient masking, empty-string handling, size-limit withholding and startup rule restoration.
 - Keep all actual mailbox data, credentials, logs, databases, runtime environments and backups under the ignored `.runtime/` directory or the existing user application data directory. Never commit them or upload them.
 - Keep `LICENSE`, `NOTICE` and upstream attribution. The user explicitly requested restoring the original OpenMaskit name and icon on 20 October 2026. Keep that name in the UI, package, CLI, documentation and maintenance checks; do not rename the project or app without an explicit user request.
