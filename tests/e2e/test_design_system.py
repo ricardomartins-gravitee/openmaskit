@@ -33,9 +33,7 @@ def test_shared_theme_and_analyzer_buttons_on_desktop_and_mobile(
             == "rgb(135, 147, 165)"
         )
         add.click()
-        dialog = page.locator(".privacy-panel .modal").filter(
-            has=page.get_by_role("heading", name="Add Analyzer")
-        )
+        dialog = page.locator(".privacy-panel .modal-target")
         expect(dialog).to_be_visible()
         expect(dialog.locator("select:visible")).to_have_count(1)
         # Preserve real native HTML form elements and existing analyser flow.

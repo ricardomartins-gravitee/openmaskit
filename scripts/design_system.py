@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import re
+import zipfile
 from pathlib import Path
 from urllib.request import urlopen
 
@@ -115,6 +116,23 @@ def update(revision, root=ROOT):
     return lock
 
 
+def check_wheel(path, root=ROOT):
+    lock = check(root)
+    with zipfile.ZipFile(path) as wheel:
+        contents = {
+            name: wheel.read("openmaskit/web/static/design/" + target)
+            for name, target in FILES.items()
+        }
+        verify(lock, contents)
+        css = wheel.read("openmaskit/web/static/style.css")
+        if any(
+            f'@import url("design/{name}")'.encode() not in css
+            for name in ["tokens.css", "components.css"]
+        ):
+            raise ValueError("Built wheel is missing shared design imports")
+    return lock
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     group = parser.add_mutually_exclusive_group()
@@ -131,8 +149,16 @@ def main():
         metavar="GIT_COMMIT",
         help="Explicitly update vendored assets and lock",
     )
+    group.add_argument(
+        "--check-wheel", type=Path, help="Verify assets in a built distribution wheel"
+    )
     args = parser.parse_args()
-    lock = update(args.update) if args.update else check(upstream=args.check_upstream)
+    if args.check_wheel:
+        lock = check_wheel(args.check_wheel)
+    else:
+        lock = (
+            update(args.update) if args.update else check(upstream=args.check_upstream)
+        )
     print(f"OpenMaskit design system {lock['version']} verified at {lock['revision']}")
 
 

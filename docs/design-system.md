@@ -19,6 +19,7 @@ updated. To verify or deliberately adopt a tested shared release:
 ```sh
 python3 scripts/design_system.py --check
 python3 scripts/design_system.py --check-upstream
+python3 scripts/design_system.py --check-wheel path/to/built.whl
 python3 scripts/design_system.py --update EXACT_40_CHARACTER_COMMIT
 ```
 

@@ -3,6 +3,7 @@
 import hashlib
 import importlib.util
 import json
+import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -149,3 +150,27 @@ async def test_design_assets_are_served_by_the_real_application():
             assert response.status_code == 200
             assert "OpenMaskit" in response.text
             assert "/static/style.css" in response.text
+
+
+@pytest.mark.parametrize("change", [None, "asset", "imports"])
+def test_built_wheel_assets_are_verified(tmp_path, change):
+    lock, contents = fixture_lock()
+    wheel_path = tmp_path / "synthetic.whl"
+    with zipfile.ZipFile(wheel_path, "w") as wheel:
+        for name, target in design.FILES.items():
+            wheel.writestr(
+                "openmaskit/web/static/design/" + target,
+                b"tampered"
+                if change == "asset" and name == "web/tokens.css"
+                else contents[name],
+            )
+        css = (ROOT / "src/openmaskit/web/static/style.css").read_bytes()
+        wheel.writestr(
+            "openmaskit/web/static/style.css",
+            b"body {}" if change == "imports" else css,
+        )
+    if change:
+        with pytest.raises(ValueError):
+            design.check_wheel(wheel_path)
+    else:
+        assert design.check_wheel(wheel_path) == lock
