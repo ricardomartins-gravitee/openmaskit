@@ -102,7 +102,10 @@ def test_shared_and_local_dashboard_lifecycle(dashboard_page, real_presidio, tmp
     expect(panel(page).get_by_role('heading', name='Privacy Checks', exact=True)).to_be_visible()
     assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
     # Library links and secondary controls use the dashboard theme.
-    expect(panel(page).get_by_role('button', name='Pause', exact=True)).to_have_class(re.compile(r'\bbtn-small\b'))
+    pause = panel(page).get_by_role('button', name='Pause', exact=True)
+    expect(pause).to_have_class(re.compile(r'\bom-button\b'))
+    assert pause.evaluate('(el) => getComputedStyle(el).color') == 'rgb(88, 166, 255)'
+    assert pause.evaluate('(el) => getComputedStyle(el).backgroundColor') == 'rgb(24, 28, 37)'
     link = panel(page).get_by_role('link', name='Open analyzer library')
     assert link.evaluate('(el) => getComputedStyle(el).color') == 'rgb(88, 166, 255)'
     page.evaluate('window.scrollTo(0, 0)')
@@ -193,6 +196,7 @@ def test_privacy_dialog_controls_match_theme(dashboard_page, tmp_path):
         reference = modal(page).locator('input').first
         theme = reference.evaluate('(el) => { const s = getComputedStyle(el); return {background: s.backgroundColor, color: s.color, radius: s.borderRadius}; }')
         controls = modal(page).locator('select:visible, textarea:visible')
+        expect(controls.first).to_be_visible()
         assert controls.count() > 0
         for control in controls.all():
             style = control.evaluate('(el) => { const s = getComputedStyle(el); return {background: s.backgroundColor, color: s.color, radius: s.borderRadius, appearance: s.appearance, image: s.backgroundImage}; }')

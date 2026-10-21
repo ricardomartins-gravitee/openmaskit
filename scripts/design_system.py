@@ -39,7 +39,7 @@ def validate_lock(lock):
         raise ValueError("Invalid design-system asset records")
     if (
         not re.fullmatch(r"\d+\.\d+\.\d+", lock.get("version", ""))
-        or set(asset["path"] for asset in assets) != set(FILES)
+        or {asset["path"] for asset in assets} != set(FILES)
         or len(assets) != len(FILES)
     ):
         raise ValueError("Invalid design-system version or file list")
