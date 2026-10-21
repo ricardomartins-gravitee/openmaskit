@@ -1,0 +1,50 @@
+/* Shared primitives; consumers retain their native controls and page layouts. */
+.om-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--om-component-panel-radius);
+  padding: var(--om-component-panel-padding);
+  display: flex;
+  flex-direction: column;
+  gap: var(--om-component-panel-gap);
+}
+.om-button {
+  font: 500 var(--om-component-button-font-size) var(--font-body);
+  color: var(--accent);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--om-component-button-radius);
+  padding: var(--om-component-button-padding-y) var(--om-component-button-padding-x);
+  cursor: pointer;
+  transition: background var(--transition-fast), opacity var(--transition-fast);
+}
+.om-button-primary { background: var(--accent); color: var(--bg-root); border-color: transparent; }
+.om-button-danger { color: var(--red); }
+.om-button:hover:not(:disabled) { background: var(--bg-hover); }
+.om-button-primary:hover:not(:disabled) { background: var(--accent-hover); }
+.om-button:active:not(:disabled) { opacity: var(--om-opacity-pressed); }
+.om-button:disabled { opacity: var(--om-opacity-disabled); cursor: not-allowed; }
+.om-button:focus-visible, .om-input:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 3px;
+}
+.om-input {
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--om-space-sm) var(--om-space-md);
+  min-width: 0;
+}
+.om-badge {
+  font: 500 var(--om-font-size-badge) var(--font-mono);
+  color: var(--teal);
+  background: var(--teal-dim);
+  border: 1px solid var(--teal-border);
+  border-radius: var(--om-component-badge-radius);
+  padding: var(--om-component-badge-padding-y) var(--om-component-badge-padding-x);
+}
+@media (prefers-reduced-motion: reduce) {
+  .om-button { transition: none; }
+}

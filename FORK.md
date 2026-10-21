@@ -36,3 +36,10 @@ The user authorized publishing this as a public native GitHub fork, including th
 ## Reducing maintenance
 
 When upstream ships equivalent protections, keep the regression checks and remove redundant fork changes only after the full suite and startup/MCP checks pass. Each update records the upstream commit in `fork.json`; every deployed version has an exact Git commit and a retained previous release.
+
+## Shared design values
+
+The fork consumes pinned, locally bundled theme assets from the independently
+maintained OpenMaskit Design System. Existing OpenMaskit identity and upstream
+attribution are preserved. See [design-system.md](docs/design-system.md) for
+integrity checks and deliberate updates shared with the native macOS Companion.

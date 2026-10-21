@@ -6,68 +6,9 @@
 
 /* Fonts loaded via <link> in HTML for non-blocking rendering */
 
-/* --- CSS Variables --- */
-:root {
-    --bg-root: #0a0c10;
-    --bg-surface: #12151c;
-    --bg-elevated: #181c25;
-    --bg-hover: #1e2330;
-    --bg-input: #0d0f14;
-
-    --border-subtle: #1e2330;
-    --border-default: #262d3a;
-    --border-focus: #2dd4bf;
-
-    --text-primary: #e8ecf0;
-    --text-secondary: #94a0b3;
-    --text-muted: #6b7589;
-
-    --accent: #58a6ff;
-    --accent-dim: #58a6ff20;
-    --accent-hover: #79b8ff;
-    --accent-glow: #58a6ff15;
-
-    --green: #34d399;
-    --green-dim: #34d39920;
-    --green-border: #34d39940;
-
-    --red: #f87171;
-    --red-dim: #f8717118;
-    --red-border: #f8717140;
-
-    --teal: #2dd4bf;
-    --teal-dim: #2dd4bf18;
-    --teal-border: #2dd4bf40;
-
-    --purple: #a78bfa;
-    --purple-dim: #a78bfa18;
-    --purple-border: #a78bfa40;
-
-    --blue: #60a5fa;
-    --blue-dim: #60a5fa18;
-    --blue-border: #60a5fa40;
-
-    --orange: #fb923c;
-    --orange-dim: #fb923c18;
-    --orange-border: #fb923c40;
-
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
-
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-    --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-    --shadow-glow: 0 0 20px var(--accent-glow);
-
-    --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
-
-    --transition-fast: 0.15s ease;
-    --transition-base: 0.2s ease;
-    --transition-slow: 0.3s ease;
-}
+/* Shared, version-pinned assets are bundled with the app for offline rendering. */
+@import url("design/tokens.css");
+@import url("design/components.css");
 
 /* --- Reset --- */
 * {

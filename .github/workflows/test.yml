@@ -27,6 +27,14 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      - name: Verify pinned shared design assets
+        run: python3 scripts/design_system.py --check-upstream
+
+      - name: Verify shared assets in the built Python distribution
+        run: |
+          uv build --wheel --out-dir .runtime/design-wheel
+          python3 scripts/design_system.py --check-wheel .runtime/design-wheel/*.whl
+
       - name: Run tests
         # Skip the e2e suite — it lives in its own dependency group (pytest-playwright,
         # Chromium, Postgres URI) and runs in the acceptance job below.
