@@ -1,0 +1,31 @@
+{
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "cce92d1efb0ba1768b756e9475392977bd37400b90bf754ab7a2060e6034fbce"
+    },
+    {
+      "path": "NOTICE",
+      "sha256": "633f41a4a7b33af69d109ed93dca6fcc37d6c9370897696def84610b4df63ed2"
+    },
+    {
+      "path": "TRADEMARKS.md",
+      "sha256": "c3916fc5507035bef3f67517b523f6396ba85979c69bf42aadd7b4c690766a27"
+    },
+    {
+      "path": "web/components.css",
+      "sha256": "35654163f8e507e1ec1a8ce37644b7704fb111e3eff0a8478c7d31c9b76e4e16"
+    },
+    {
+      "path": "web/tokens.css",
+      "sha256": "0518794086d4e0f2886e545eacbd35b10b687669f85e407794134d573f93a83f"
+    },
+    {
+      "path": "web/tokens.resolved.json",
+      "sha256": "4ab5448cc3a7db8e093aa668c4419937bd126862f15c3b6792a102e00161d082"
+    }
+  ],
+  "repository": "ricardomartins-gravitee/openmaskit-design-system",
+  "revision": "4a3024357273354309ba21c72b427e094c99be88",
+  "version": "0.1.0"
+}

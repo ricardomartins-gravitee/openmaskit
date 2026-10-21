@@ -2,8 +2,8 @@
 <section class="panel privacy-panel" x-data="privacyChecksPanel()">
     <div class="panel-header">
         <h2 x-text="scope ? 'Privacy Checks' : 'Analyzers'"></h2>
-        <button class="btn-primary" x-show="!scope" @click="openProvider()" :disabled="loading || busy">Add Analyzer</button>
-        <button class="btn-primary" x-show="scope" @click="openAssignment()" :disabled="loading || busy || !providers.length">Add Check</button>
+        <button class="om-button om-button-primary" x-show="!scope" @click="openProvider()" :disabled="loading || busy">Add Analyzer</button>
+        <button class="om-button om-button-primary" x-show="scope" @click="openAssignment()" :disabled="loading || busy || !providers.length">Add Check</button>
     </div>
     <p class="muted" x-show="!scope">Register an analyzer, add its checks, then enable them on the MCP servers you choose.</p>
     <p class="muted" x-show="scope">Checks added here apply only to this MCP server. Choose all tools or a specific tool. <a href="/privacy">Open analyzer library</a></p>
@@ -20,9 +20,9 @@
                 <td x-text="scopeLabel(check(binding.check_id))"></td>
                 <td x-text="binding.tool_name === '*' ? 'All tools' : binding.tool_name"></td>
                 <td x-text="binding.active ? 'Enabled' : 'Paused'"></td>
-                <td class="privacy-actions"><button class="btn-small" @click="openAssignment(binding)" :disabled="busy">Edit</button>
-                    <button class="btn-small" @click="toggle(binding)" :disabled="busy" x-text="binding.active ? 'Pause' : 'Enable'"></button>
-                    <button class="btn-danger" @click="detach(binding)" :disabled="busy">Remove</button></td>
+                <td class="privacy-actions"><button class="om-button" @click="openAssignment(binding)" :disabled="busy">Edit</button>
+                    <button class="om-button" @click="toggle(binding)" :disabled="busy" x-text="binding.active ? 'Pause' : 'Enable'"></button>
+                    <button class="om-button om-button-danger" @click="detach(binding)" :disabled="busy">Remove</button></td>
             </tr></template></tbody>
         </table>
     </div>
@@ -30,7 +30,7 @@
 
     <div class="panel-header privacy-definitions-header" x-show="scope">
         <h3>Analyzers and Check Definitions</h3>
-        <button class="btn-small" @click="openProvider()" :disabled="busy">Add MCP-only Analyzer</button>
+        <button class="om-button" @click="openProvider()" :disabled="busy">Add MCP-only Analyzer</button>
     </div>
     <p class="muted" x-show="scope">Reuse an analyzer's existing checks, or create analyzers and checks visible only on this MCP server. Shared definitions are managed in the analyzer library.</p>
     <p class="muted" x-show="!loading && !providers.length">No analyzers configured. Add an analyzer to start creating checks. Registering one does not install software.</p>
@@ -48,10 +48,10 @@
                            x-text="health[provider.id] || 'Not checked'"></p>
                     </div>
                     <div class="privacy-analyzer-actions">
-                        <button class="btn-small" @click="connection(provider)" :disabled="busy">Check Connection</button>
-                        <button class="btn-small" x-show="provider.scope === scope" @click="openProvider(provider)" :disabled="busy">Edit Analyzer</button>
-                        <button class="btn-danger" x-show="provider.scope === scope" @click="remove('providers', provider)" :disabled="busy">Delete Analyzer</button>
-                        <button class="btn-primary" @click="openCheck(null, provider.id)" :disabled="busy"
+                        <button class="om-button" @click="connection(provider)" :disabled="busy">Check Connection</button>
+                        <button class="om-button" x-show="provider.scope === scope" @click="openProvider(provider)" :disabled="busy">Edit Analyzer</button>
+                        <button class="om-button om-button-danger" x-show="provider.scope === scope" @click="remove('providers', provider)" :disabled="busy">Delete Analyzer</button>
+                        <button class="om-button om-button-primary" @click="openCheck(null, provider.id)" :disabled="busy"
                                 x-text="scope ? 'Create MCP-only Check' : 'Add Check'"></button>
                     </div>
                 </div>
@@ -64,10 +64,10 @@
                             <td x-text="item.name"></td><td x-text="item.entities.join(', ')"></td><td x-text="actionLabel(item.action)"></td>
                             <td x-text="scope ? scopeLabel(item) : item.used_by + (item.used_by === 1 ? ' server' : ' servers')"></td>
                             <td class="privacy-actions">
-                                <button class="btn-small" x-show="item.scope === scope" @click="openCheck(item)" :disabled="busy">Edit Check</button>
-                                <button class="btn-small" x-show="scope" @click="openAssignment(bindingFor(item.id), item)" :disabled="busy"
+                                <button class="om-button" x-show="item.scope === scope" @click="openCheck(item)" :disabled="busy">Edit Check</button>
+                                <button class="om-button" x-show="scope" @click="openAssignment(bindingFor(item.id), item)" :disabled="busy"
                                         x-text="bindingFor(item.id) ? 'Configure on this Server' : 'Use on this Server'"></button>
-                                <button class="btn-danger" x-show="item.scope === scope" @click="remove('checks', item)" :disabled="busy">Delete Check</button>
+                                <button class="om-button om-button-danger" x-show="item.scope === scope" @click="remove('checks', item)" :disabled="busy">Delete Check</button>
                             </td>
                         </tr></template></tbody>
                     </table>
@@ -109,7 +109,7 @@
                             <template x-for="tool in tools" :key="tool.name"><option :value="tool.name" x-text="tool.name"></option></template>
                             <template x-if="assignmentForm.tool_name && assignmentForm.tool_name !== '*' && !tools.some(t => t.name === assignmentForm.tool_name)"><option :value="assignmentForm.tool_name" x-text="assignmentForm.tool_name + ' (unavailable)'"></option></template>
                         </select></label>
-                        <button type="button" class="btn-small" @click="openCheck(null, selectedAnalyzer)" :disabled="busy || !selectedAnalyzer">Create MCP-only Check</button>
+                        <button type="button" class="om-button" @click="openCheck(null, selectedAnalyzer)" :disabled="busy || !selectedAnalyzer">Create MCP-only Check</button>
                     </div>
                     <div x-show="modal === 'check'">
                         <label class="modal-field">Analyzer<input readonly :value="providerName(checkForm.provider_id)"></label>
@@ -125,14 +125,14 @@
                         </select></label>
                         <details><summary>Preview</summary>
                             <label class="modal-field">Sample text<textarea x-model="previewText" rows="3" maxlength="100000"></textarea></label>
-                            <button type="button" class="btn-small" @click="preview()" :disabled="busy || !checkForm.provider_id">Preview Check</button>
+                            <button type="button" class="om-button" @click="preview()" :disabled="busy || !checkForm.provider_id">Preview Check</button>
                             <pre class="privacy-preview" x-show="previewResult" x-text="previewResult"></pre>
                             <p class="muted">Preview uses temporary aliases and does not save sample text or mappings.</p>
                         </details>
                     </div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn-small" @click="modal = ''" :disabled="busy">Cancel</button>
-                    <button type="submit" class="btn-primary" :disabled="busy || (modal === 'assignment' && !assignmentForm.check_id)"
+                <div class="modal-footer"><button type="button" class="om-button" @click="modal = ''" :disabled="busy">Cancel</button>
+                    <button type="submit" class="om-button om-button-primary" :disabled="busy || (modal === 'assignment' && !assignmentForm.check_id)"
                             x-text="busy ? 'Saving…' : enableOnSave && modal === 'check' ? 'Save and Enable' : 'Save'"></button></div>
             </form>
         </div>
