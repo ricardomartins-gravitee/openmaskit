@@ -81,7 +81,10 @@ Escape cancellation, analyzer reconnection and escaped markup in names. These
 tests deliberately intercept HTTP responses to isolate browser error handling;
 they supplement the real Presidio tests rather than standing in for model checks.
 All in-process backend tests use a fresh temporary encryption key per test, even
-when an individual test restores its own monkeypatches.
+when an individual test restores its own monkeypatches. The unit job retains
+JUnit results plus statement/branch coverage in JSON, XML and browsable HTML.
+Those reports describe the backend; browser and real-model acceptance are
+separate behavioral checks and are not included in that percentage.
 
 The public catalog returned HTTP 400 ("Missing required headers") during the
 19 October 2026 acceptance run, including with the original upstream version

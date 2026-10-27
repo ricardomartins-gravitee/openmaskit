@@ -40,7 +40,26 @@ jobs:
         # Chromium, Postgres URI) and runs in the acceptance job below.
         # Without --ignore, pytest still tries to import tests/e2e/* during collection
         # and fails on the playwright import even though the e2e marker would deselect them.
-        run: uv run pytest tests/ -v --ignore=tests/e2e
+        run: >-
+          uv run pytest tests/ -v --ignore=tests/e2e
+          --junitxml=.runtime/backend-tests.xml
+          --cov=openmaskit --cov-branch
+          --cov-report=xml:.runtime/backend-coverage.xml
+          --cov-report=json:.runtime/backend-coverage.json
+          --cov-report=html:.runtime/backend-coverage
+
+      - name: Save backend test and branch coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-coverage
+          path: |
+            .runtime/backend-tests.xml
+            .runtime/backend-coverage.xml
+            .runtime/backend-coverage.json
+            .runtime/backend-coverage/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Check privacy across real startup and MCP calls
         run: uv run --frozen python scripts/privacy_smoke.py
