@@ -46,9 +46,15 @@ def test_pending_save_disables_duplicate_submission(dashboard_page):
     page = dashboard_page
     pending = []
     open_provider(page)
-    page.route("**/api/privacy/providers/create", lambda route: pending.append(route))
+
+    def hold_request(route):
+        pending.append(route)
+        page.evaluate("window.syntheticRequestHeld = true")
+
+    page.route("**/api/privacy/providers/create", hold_request)
     save = modal(page).locator("button[type='submit']")
     save.click()
+    page.wait_for_function("window.syntheticRequestHeld === true")
     expect(save).to_be_disabled()
     expect(modal(page).get_by_role("button", name="Close privacy check settings")).to_be_disabled()
     # Native disabled-button semantics must also hold for programmatic activation.
