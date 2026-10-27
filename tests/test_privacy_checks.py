@@ -576,3 +576,36 @@ async def test_adapter_preserves_meaningful_endpoint_paths(adapter, configured, 
                 CheckConfig(name='Draft', provider_id='id'), NAME)
         assert len(result) == 1
         assert len(route.calls) == 1
+
+
+@pytest.mark.parametrize('method, path, body, message', [
+    ('POST', '/api/privacy/unknown/missing/delete', {}, 'Unknown privacy definition type'),
+    ('POST', '/api/targets/mail/privacy/assignments/missing/delete', {}, 'Assignment not found'),
+    ('POST', '/api/privacy/preview', {}, 'check'),
+])
+async def test_privacy_api_rejections_preserve_definitions_and_assignments(client, setup, method, path, body, message):
+    before = (await client.get('/api/privacy')).json()
+    response = await client.request(method, path, json=body)
+    assert response.status_code == 400
+    assert message in response.json()['error']
+    assert (await client.get('/api/privacy')).json() == before
+    assert setup[1].assigned('mail') == []
+
+
+async def test_missing_privacy_registry_fails_closed_without_returning_definitions(client, setup):
+    setup[2].privacy_checks = None
+    response = await client.get('/api/privacy')
+    assert response.status_code == 400
+    assert response.json() == {'error': 'Privacy check registry is not available'}
+
+
+async def test_analyzer_preview_failure_returns_safe_retryable_error(client, setup, analyzer):
+    provider = setup[3]
+    analyzer.mock(return_value=httpx.Response(500, text='private diagnostic ' + NAME))
+    before = (await client.get('/api/privacy')).json()
+    response = await client.post('/api/privacy/preview', json={
+        'check': {'name': 'Draft', 'provider_id': provider['id']}, 'text': NAME})
+    assert response.status_code == 422
+    assert NAME not in response.text and 'private diagnostic' not in response.text
+    assert response.json()['error'] == 'Analyzer could not complete this check. Check its connection and settings.'
+    assert (await client.get('/api/privacy')).json() == before

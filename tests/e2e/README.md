@@ -75,6 +75,17 @@ both and runs the complete suite; the unit job runs all non-browser regressions
 and the existing real startup/MCP smoke check. These jobs run on pull requests
 and main-branch pushes, without local scheduling or automatic installation.
 
+`test_privacy_resilience.py` separately exercises UI save/preview failures,
+retry without duplicate definitions, disabled controls while a request is pending,
+Escape cancellation, analyzer reconnection and escaped markup in names. These
+tests deliberately intercept HTTP responses to isolate browser error handling;
+they supplement the real Presidio tests rather than standing in for model checks.
+All in-process backend tests use a fresh temporary encryption key per test, even
+when an individual test restores its own monkeypatches. The unit job retains
+JUnit results plus statement/branch coverage in JSON, XML and browsable HTML.
+Those reports describe the backend; browser and real-model acceptance are
+separate behavioral checks and are not included in that percentage.
+
 The public catalog returned HTTP 400 ("Missing required headers") during the
 19 October 2026 acceptance run, including with the original upstream version
 header. Its live availability is independent of this change. The local catalog
