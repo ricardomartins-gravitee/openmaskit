@@ -350,3 +350,38 @@ class TestMappingsAPI:
         assert resp.status_code == 200
         data = resp.json()
         assert "mappings" in data
+
+
+class TestRuleRejectionBoundaries:
+    @pytest.mark.anyio
+    @pytest.mark.parametrize("change", [
+        {"field_path": "x" * 257},
+        {"alias_prefix": "x" * 65},
+        {"action": "execute"},
+    ])
+    async def test_invalid_definition_does_not_change_saved_or_live_rules(self, client, state, change):
+        before = (await client.get("/api/targets/test/rules")).json()
+        response = await client.post("/api/targets/test/rules/create",
+            json={"field_path": "messages.author", **change})
+        assert response.status_code == 400
+        assert (await client.get("/api/targets/test/rules")).json() == before
+        assert len(state.targets["test"].engine.rules) == len(before["rules"])
+        assert not await state.store.get_rules(target_name="test")
+
+    @pytest.mark.anyio
+    @pytest.mark.parametrize("method, suffix", [
+        ("POST", "create"), ("POST", "1/update"), ("DELETE", "1/delete"),
+    ])
+    async def test_missing_server_mutations_leave_existing_server_untouched(self, client, method, suffix):
+        before = (await client.get("/api/targets/test/rules")).json()
+        response = await client.request(method, "/api/targets/missing/rules/" + suffix,
+            json={"field_path": "messages.author", "alias_prefix": "person"})
+        assert response.status_code == 404
+        assert (await client.get("/api/targets/test/rules")).json() == before
+
+    @pytest.mark.anyio
+    async def test_update_missing_rule_preserves_live_and_saved_rules(self, client):
+        before = (await client.get("/api/targets/test/rules")).json()
+        response = await client.post("/api/targets/test/rules/99999/update", json={"alias_prefix": "other"})
+        assert response.status_code == 404
+        assert (await client.get("/api/targets/test/rules")).json() == before
