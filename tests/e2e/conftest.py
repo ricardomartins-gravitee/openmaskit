@@ -150,8 +150,11 @@ def dashboard_page(openmaskit_server: str, page: Page) -> Page:
     page.set_default_timeout(15_000)
     page.goto(openmaskit_server)
     skip = page.get_by_role("button", name="Skip for now")
-    if skip.is_visible():
-        skip.click()
+    # Every fixture has fresh browser storage and an empty server. The welcome
+    # dialog appears after async target loading and an animation delay; checking
+    # visibility once can miss it and leave it covering the next test action.
+    skip.click()
+    skip.wait_for(state="hidden")
     return page
 
 
