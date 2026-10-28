@@ -7,6 +7,10 @@ An unofficial maintained fork of [OpenMaskit](https://github.com/MaskitMCP/openm
 - Empty header strings remain empty; legacy empty aliases cannot expand text.
 - Tool results requiring field parsing are withheld when a text block exceeds the parsing limit.
 - Saved rules reload for database-managed servers during startup.
+- Failed upstream connections stay isolated from the dashboard and other servers;
+  transport failures retain saved activation and privacy configuration for retry.
+  Disconnects stop per-server background tasks and flush pending aliases before
+  reconnecting; failed writes remain queued and block stale alias-counter reloads.
 - The dashboard, distribution and command retain the original OpenMaskit name and icon. This repository remains an unofficial fork with its provenance documented here.
 - Dependencies are locked, including the existing MCP major-version compatibility constraint.
 - Reusable analyzer-backed text checks support shared definitions and server-only definitions, with local Presidio and compatible HTTP adapters. See [privacy-checks.md](docs/privacy-checks.md).

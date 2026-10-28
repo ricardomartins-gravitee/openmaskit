@@ -173,9 +173,11 @@ class TargetState:
     server_id: str | None = None
     # (runtime, container_name) when this target is backed by a container
     # `run` command. Used by manager.remove_target to explicitly stop the
-    # container regardless of whether connect_upstream's `finally` runs.
+    # container when handling legacy or incomplete runtime state.
     container_info: tuple[str, str] | None = None
     privacy_checks: Any | None = None
+    lifecycle_scope: anyio.CancelScope | None = None
+    flush_lock: anyio.Lock = field(default_factory=anyio.Lock)
 
     def cache_tool_schemas(self, schemas: list[dict[str, Any]]):
         self.tool_schemas = schemas
@@ -259,7 +261,6 @@ async def _bootstrap_upstream(
         return
 
     logger.debug("[%s] Initialize response received", target.name)
-    target.initialized = True
 
     # Send initialized notification
     notif = JSONRPCNotification(method="notifications/initialized", jsonrpc="2.0")
@@ -289,6 +290,7 @@ async def _bootstrap_upstream(
                     logger.debug("[%s] Cached %d tool schemas from upstream", target.name, len(tools))
             else:
                 logger.warning("[%s] tools/list response had no tools: %s", target.name, result)
+            target.initialized = True
             break
 
 
@@ -311,8 +313,16 @@ async def run_proxy_for_target(
 
     try:
         async with anyio.create_task_group() as tg:
+            async def relay_until_upstream_closed():
+                try:
+                    await _relay_upstream_to_downstream(target, us_read, us_write)
+                finally:
+                    # Upstream EOF also stops the downstream reader. Downstream
+                    # EOF alone must still allow pending responses to arrive.
+                    tg.cancel_scope.cancel()
+
             tg.start_soon(_relay_downstream_to_upstream, target, us_write)
-            tg.start_soon(_relay_upstream_to_downstream, target, us_read, us_write)
+            tg.start_soon(relay_until_upstream_closed)
     except Exception as exc:
         # Catch any unhandled exceptions from relay tasks (e.g., OAuth 401 errors)
         logger.error(
@@ -321,6 +331,8 @@ async def run_proxy_for_target(
         )
         target.initialized = False
         raise  # Re-raise to let the manager handle cleanup
+    finally:
+        target.initialized = False
 
 
 async def _relay_downstream_to_upstream(
