@@ -33,7 +33,7 @@ async def test_response_dispatcher_shutdown():
 async def test_cleanup_target_state():
     """cleanup_target_state clears pending requests and closes streams."""
     store = await MaskingStore.create(":memory:")
-    engine = MaskingEngine(store, "test")
+    engine = MaskingEngine([], store, target_name="test")
 
     target = TargetState(
         name="test",
@@ -69,7 +69,7 @@ async def test_cleanup_target_state():
 async def test_graceful_shutdown_sequence():
     """Graceful shutdown coordinator follows expected sequence."""
     store = await MaskingStore.create(":memory:")
-    engine = MaskingEngine(store, "test")
+    engine = MaskingEngine([], store, target_name="test")
 
     target = TargetState(
         name="test",
@@ -139,7 +139,7 @@ async def test_shutdown_timeout_enforcement():
 async def test_flush_loop_stops_on_shutdown_event():
     """Flush loop respects shutdown_event and performs final flush."""
     store = await MaskingStore.create(":memory:")
-    engine = MaskingEngine(store, "test")
+    engine = MaskingEngine([], store, target_name="test")
     shutdown_event = anyio.Event()
 
     # Simulate pending write by directly adding to the internal list
@@ -161,5 +161,6 @@ async def test_flush_loop_stops_on_shutdown_event():
 
     # Final flush should have been performed
     assert not engine.has_pending_writes
+    assert await store.get_all_aliases(target_name="test") == {"alias_1": "real_value_1"}
 
     await store.close()

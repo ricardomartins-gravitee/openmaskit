@@ -435,20 +435,35 @@ async def async_main():
                 MemoryObjectReceiveStream[SessionMessage | Exception],
                 MemoryObjectSendStream[SessionMessage],
             ]] = {}
+            upstream_stacks: dict[str, AsyncExitStack] = {}
 
             failed_targets = []
             for name, target_state in state.targets.items():
                 if name in config.targets:
                     target_config = config.targets[name]
-                    us_read, us_write, container_info = await stack.enter_async_context(
-                        connect_upstream(target_config.upstream, config.store_path,
-                                       errlog=upstream_errlog, server_id=name,
-                                       container_runtime=config.container_runtime)
-                    )
+                    own_stack = AsyncExitStack()
+                    try:
+                        us_read, us_write, container_info = await own_stack.enter_async_context(
+                            connect_upstream(target_config.upstream, config.store_path,
+                                           errlog=upstream_errlog, server_id=name,
+                                           container_runtime=config.container_runtime)
+                        )
+                    except Exception as exc:
+                        logger.warning("Cannot connect configured target %s (%s)", name, type(exc).__name__)
+                        await own_stack.aclose()
+                        failed_targets.append(name)
+                        continue
                     target_state.container_info = container_info
                     upstream_streams[name] = (us_read, us_write)
+                    upstream_stacks[name] = own_stack
+                    stack.push_async_callback(own_stack.aclose)
                 elif name in marketplace_configs:
-                    upstream_cfg = _build_upstream_config(marketplace_configs[name])
+                    try:
+                        upstream_cfg = _build_upstream_config(marketplace_configs[name])
+                    except Exception as exc:
+                        logger.warning("Cannot load upstream configuration %s (%s)", name, type(exc).__name__)
+                        failed_targets.append(name)
+                        continue
 
                     # Pre-flight refresh if token is known-expired
                     if is_oauth_token_expired(name, config.store_path):
@@ -496,14 +511,12 @@ async def async_main():
                                 own_stack = None
                         if own_stack is None:
                             failed_targets.append(name)
-                            try:
-                                await store.deactivate_server(name)
-                                logger.info("Deactivated server %s in database; re-auth via dashboard to reconnect", name)
-                            except Exception as deactivate_exc:
-                                logger.error("Failed to deactivate server %s: %s", name, deactivate_exc)
+                            # A transient transport failure must not rewrite
+                            # the operator's saved active configuration.
                             continue
 
-                    # Register the isolated stack with the parent so it tears down at shutdown.
+                    # connect_upstream owns SDK scopes in its transport task;
+                    # this stack only signals that owner at shutdown.
                     # Wrap aclose to swallow exit-time errors per target (otherwise one bad
                     # upstream's teardown takes down the whole process).
                     def _make_safe_aclose(target_name=name, s=own_stack):
@@ -516,6 +529,7 @@ async def async_main():
                     stack.push_async_callback(_make_safe_aclose())
                     state.targets[name].container_info = container_info
                     upstream_streams[name] = (us_read, us_write)
+                    upstream_stacks[name] = own_stack
             for name in failed_targets:
                 del state.targets[name]
 
@@ -524,6 +538,7 @@ async def async_main():
                                        container_runtime=config.container_runtime)
                 manager.set_task_group(tg, shutdown_event)
                 state.target_manager = manager
+                manager._exit_stacks.update(upstream_stacks)
 
                 # Start OAuth state cleanup task if backend is enabled
                 if backend_client.enabled:
@@ -542,28 +557,9 @@ async def async_main():
 
                 tg.start_soon(_shutdown_on_signal)
 
-                async def _safe_run_proxy(target_state, us_read, us_write):
-                    target_name = target_state.name
-                    try:
-                        await run_proxy_for_target(target_state, us_read, us_write)
-                    except Exception as exc:
-                        logger.error(
-                            "[%s] Proxy task failed (likely OAuth/upstream error); deactivating target. %s",
-                            target_name, exc,
-                        )
-                        # Deactivate so we don't crash again on next startup
-                        try:
-                            await store.deactivate_server(target_name)
-                        except Exception:
-                            pass
-                        state.targets.pop(target_name, None)
-
                 for name, target_state in state.targets.items():
                     us_read, us_write = upstream_streams[name]
-                    tg.start_soon(_safe_run_proxy, target_state, us_read, us_write)
-                    tg.start_soon(_flush_loop, target_state.engine, shutdown_event)
-                    # Start background eviction to prevent memory leaks
-                    tg.start_soon(target_state.response_dispatcher.start_background_eviction, shutdown_event)
+                    tg.start_soon(manager.run_target, target_state, us_read, us_write)
 
                 tg.start_soon(_traffic_flush_loop, traffic_buffer, traffic_store, shutdown_event)
                 tg.start_soon(_traffic_rotation_loop, traffic_store, traffic_max_rows, shutdown_event)

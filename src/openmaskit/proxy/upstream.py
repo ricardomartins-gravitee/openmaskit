@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import sys
@@ -14,6 +15,7 @@ import httpx
 
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.client.streamable_http import streamable_http_client
+from mcp.shared._httpx_utils import create_mcp_http_client
 
 from openmaskit.models import UpstreamHttpConfig, UpstreamStdioConfig
 from openmaskit.security import validate_server_id, read_token_file, write_token_file
@@ -177,8 +179,78 @@ async def refresh_backend_oauth_token(
     return new_tokens["access_token"]
 
 
+class _UpstreamOwner:
+    """Keep SDK task-group scopes on one task for the transport's entire life.
+
+    A separate AsyncExitStack in the dashboard task is not isolation: an SDK
+    request failure cancels the task which entered its task group. The owner
+    contains that cancellation and closes the streams so only this target stops.
+    """
+
+    def __init__(self, args, kwargs):
+        self.args = args
+        self.kwargs = kwargs
+        self.ready = asyncio.get_running_loop().create_future()
+        self.stopping = False
+        self.stop = anyio.Event()
+        self.task = asyncio.create_task(self.run(), name="openmaskit-upstream-owner")
+
+    async def run(self):
+        streams = None
+        try:
+            async with _connect_upstream(*self.args, **self.kwargs) as streams:
+                self.ready.set_result(streams)
+                await self.stop.wait()
+        except asyncio.CancelledError:
+            if not self.ready.done():
+                self.ready.set_exception(ConnectionError("Upstream connection cancelled"))
+            elif not self.stopping:
+                logger.warning("Upstream transport cancelled; target disconnected")
+        except Exception as exc:
+            if not self.ready.done():
+                self.ready.set_exception(exc)
+            else:
+                # Exception text may contain an upstream URL or credentials.
+                logger.warning("Upstream transport stopped (%s); target disconnected", type(exc).__name__)
+        finally:
+            if streams is not None:
+                with anyio.CancelScope(shield=True):
+                    for stream in streams[:2]:
+                        close = getattr(stream, "aclose", None)
+                        if close is not None:
+                            try:
+                                await close()
+                            except Exception as exc:
+                                logger.warning("Upstream stream cleanup failed (%s)", type(exc).__name__)
+
+    async def close(self):
+        self.stopping = True
+        self.stop.set()
+        # Public caller cancellation is not swallowed: it resumes after this
+        # cleanup. Closing from another API task never exits an SDK scope there.
+        with anyio.CancelScope(shield=True):
+            with anyio.move_on_after(10):
+                await asyncio.shield(self.task)
+            if not self.task.done():
+                self.task.cancel()
+                with anyio.fail_after(10):
+                    await asyncio.shield(self.task)
+        if self.ready.done() and not self.ready.cancelled():
+            self.ready.exception()  # Retrieve a startup error if its waiter cancelled.
+
+
 @asynccontextmanager
-async def connect_upstream(
+async def connect_upstream(*args, **kwargs):
+    """Connect in a dedicated owner; callers may exit from a different task."""
+    owner = _UpstreamOwner(args, kwargs)
+    try:
+        yield await asyncio.shield(owner.ready)
+    finally:
+        await owner.close()
+
+
+@asynccontextmanager
+async def _connect_upstream(
     upstream: UpstreamStdioConfig | UpstreamHttpConfig,
     store_path: str = "~/.openmaskit/store.db",
     errlog: TextIO = sys.stderr,
@@ -193,9 +265,8 @@ async def connect_upstream(
     ``container_info`` is ``(runtime, container_name)`` when the upstream is
     a containerized stdio command we manage, or ``None`` otherwise. Callers
     should stash ``container_info`` on the per-target state so an explicit
-    ``stop_container`` can run on teardown without depending on this context
-    manager's ``finally`` (which can be bypassed when the context is closed
-    from a different task than the one that entered it).
+    ``stop_container`` can also handle legacy or incomplete runtime state.
+    This internal context is entered and exited only by its transport owner.
 
     Args:
         container_runtime: Optional container runtime override (docker/podman/nerdctl/finch)
@@ -274,7 +345,7 @@ async def connect_upstream(
             logger.info(f"Using backend-managed OAuth token for {server_id}")
             headers = dict(static_headers)
             headers["Authorization"] = f"Bearer {access_token}"
-            http_client = httpx.AsyncClient(headers=headers, follow_redirects=True)
+            http_client = create_mcp_http_client(headers=headers)
             async with http_client:
                 async with streamable_http_client(
                     upstream.url, http_client=http_client
@@ -302,9 +373,7 @@ async def connect_upstream(
                 oauth_store_path,
             )
 
-            http_client = httpx.AsyncClient(
-                auth=provider, headers=static_headers, follow_redirects=True
-            )
+            http_client = create_mcp_http_client(auth=provider, headers=static_headers)
             async with http_client:
                 async with streamable_http_client(
                     upstream.url, http_client=http_client
@@ -313,9 +382,7 @@ async def connect_upstream(
 
         else:
             # No OAuth: simple HTTP connection (optionally with static headers).
-            http_client = httpx.AsyncClient(
-                headers=static_headers, follow_redirects=True
-            )
+            http_client = create_mcp_http_client(headers=static_headers)
             async with http_client:
                 async with streamable_http_client(
                     upstream.url, http_client=http_client

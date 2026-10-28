@@ -54,6 +54,13 @@ def patched_transport(monkeypatch):
     monkeypatch.setattr(upstream_mod.httpx, "AsyncClient", _CapturingAsyncClient)
     monkeypatch.setattr(upstream_mod, "streamable_http_client", _noop_streamable)
     yield _CapturingAsyncClient
+    # All three auth branches must retain SDK transport timeouts, rather than
+    # silently applying HTTPX's five-second default to MCP initialization.
+    if _CapturingAsyncClient.last_kwargs is not None:
+        timeout = _CapturingAsyncClient.last_kwargs["timeout"]
+        assert timeout.connect == 30.0
+        assert timeout.read == 300.0
+        assert _CapturingAsyncClient.last_kwargs["follow_redirects"] is True
 
 
 class TestPlainHttpBranchHeaders:

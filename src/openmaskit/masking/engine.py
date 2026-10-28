@@ -323,10 +323,17 @@ class MaskingEngine:
         """
         writes = self._pending_writes[:]
         self._pending_writes.clear()
-        for alias, real_value, tool_name, field_path in writes:
-            await self._store.persist_alias(
-                self._target_name, alias, real_value, tool_name, field_path,
-            )
+        for index, (alias, real_value, tool_name, field_path) in enumerate(writes):
+            try:
+                await self._store.persist_alias(
+                    self._target_name, alias, real_value, tool_name, field_path,
+                )
+            except BaseException:
+                # Preserve both the failed suffix and aliases minted while an
+                # earlier write awaited SQLite. Retrying persist_alias is safe
+                # even if the failed commit completed: its insert is idempotent.
+                self._pending_writes[:0] = writes[index:]
+                raise
 
     def mask_response(self, tool_name: str, result: dict[str, Any]) -> dict[str, Any]:
         """Mask sensitive fields in a tool call response (synchronous, uses cache)."""

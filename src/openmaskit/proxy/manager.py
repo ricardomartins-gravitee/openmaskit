@@ -79,6 +79,8 @@ class TargetManager:
         self._store_path = store_path
         self._container_runtime = container_runtime
         self._exit_stacks: dict[str, AsyncExitStack] = {}
+        self._target_locks: dict[str, anyio.Lock] = {}
+        self._failed_flushes: dict[str, TargetState] = {}
         self._task_group: anyio.abc.TaskGroup | None = None
         self._shutdown_event: anyio.Event | None = None
 
@@ -91,11 +93,22 @@ class TargetManager:
             tg.start_soon(self._monitor_token_refresh)
 
     async def add_target(self, server_id: str, config: dict) -> TargetState:
+        # A departed engine must finish persisting aliases before a retry loads
+        # its counters. The same lock also serializes concurrent activations.
+        async with self._target_locks.setdefault(server_id, anyio.Lock()):
+            if server_id in self._state.targets:
+                raise ValueError("Target is already connected")
+            return await self._add_target(server_id, config)
+
+    async def _add_target(self, server_id: str, config: dict) -> TargetState:
         """Hot-add a new target: create state, connect upstream, start relay.
 
         Cleans up after itself on failure — callers should NOT call remove_target
         if this raises.
         """
+        departed = self._failed_flushes.get(server_id)
+        if departed is not None:
+            await self._flush_departed(departed)
         engine = MaskingEngine([], self._store, target_name=server_id)
         await engine.load_rules()
         await engine.load_aliases()
@@ -135,53 +148,87 @@ class TargetManager:
 
             with anyio.fail_after(120):
                 await _bootstrap_upstream(us_read, us_write, target)
+            if not target.initialized:
+                raise ConnectionError("Upstream closed before initialization completed")
         except BaseException:
-            self._exit_stacks.pop(server_id, None)
-            self._state.targets.pop(server_id, None)
-            await stack.aclose()
+            if self._state.targets.get(server_id) is target:
+                self._state.targets.pop(server_id, None)
+            if self._exit_stacks.get(server_id) is stack:
+                self._exit_stacks.pop(server_id, None)
+            with anyio.CancelScope(shield=True):
+                await stack.aclose()
             raise
 
         if self._task_group:
-            # Wrap proxy task to handle failures gracefully
-            async def run_proxy_with_error_handling():
-                try:
-                    await run_proxy_for_target(target, us_read, us_write)
-                except Exception as exc:
-                    logger.error(
-                        "Target '%s' proxy crashed, disconnecting: %s",
-                        server_id, exc, exc_info=True
-                    )
-                    # Auto-disconnect on crash
-                    try:
-                        await self.remove_target(server_id)
-                    except Exception as cleanup_exc:
-                        logger.error(
-                            "Failed to cleanup crashed target '%s': %s",
-                            server_id, cleanup_exc
-                        )
-
-            self._task_group.start_soon(run_proxy_with_error_handling)
-            self._task_group.start_soon(self._flush_loop, engine)
+            self._task_group.start_soon(self.run_target, target, us_read, us_write)
 
         return target
 
-    async def remove_target(self, server_id: str) -> None:
+    async def run_target(self, target: TargetState, us_read, us_write) -> None:
+        """Own the relay and its background tasks until failure, EOF or removal."""
+        if self._state.targets.get(target.name) is not target:
+            return
+        try:
+            async with anyio.create_task_group() as tasks:
+                target.lifecycle_scope = tasks.cancel_scope
+                tasks.start_soon(self._flush_loop, target.engine, target.flush_lock)
+                tasks.start_soon(target.response_dispatcher.start_background_eviction, self._shutdown_event)
+                try:
+                    await run_proxy_for_target(target, us_read, us_write)
+                finally:
+                    tasks.cancel_scope.cancel()
+                    with anyio.CancelScope(shield=True):
+                        await self.remove_target(target.name, expected=target)
+        except Exception as exc:
+            # Include nursery exit/background/final-flush failures, without
+            # swallowing external cancellation (a BaseException).
+            logger.warning("Target %s disconnected (%s)", target.name, type(exc).__name__)
+
+    async def _flush_departed(self, target: TargetState) -> None:
+        try:
+            async with target.flush_lock:
+                if target.engine.has_pending_writes:
+                    await target.engine.flush_pending()
+        except BaseException:
+            self._failed_flushes[target.name] = target
+            raise
+        if self._failed_flushes.get(target.name) is target:
+            self._failed_flushes.pop(target.name, None)
+
+    async def remove_target(self, server_id: str, *, expected: TargetState | None = None) -> None:
+        with anyio.CancelScope(shield=True):
+            async with self._target_locks.setdefault(server_id, anyio.Lock()):
+                await self._remove_target(server_id, expected=expected)
+
+    async def _remove_target(self, server_id: str, *, expected: TargetState | None = None) -> None:
         """Teardown: close upstream connection, stop relay tasks, remove from state.
 
         Explicitly stops the upstream container before closing the exit stack.
-        The stack-close path can fail (silently) when the stack is closed from
-        a different task than the one that entered it — common in the
-        deactivate/delete HTTP-handler path. Doing the stop here makes the
-        cleanup independent of that close succeeding.
+        The transport's owner task closes its own SDK contexts, including when
+        removal is requested from a different HTTP-handler task. The explicit
+        container stop also handles older/incomplete runtime state.
         """
         target = self._state.targets.get(server_id)
+        if expected is not None and target is not expected:
+            return
+        # Detach atomically before any await. An old relay's finalizer must
+        # never pop or close a replacement target's resources.
+        self._state.targets.pop(server_id, None)
+        stack = self._exit_stacks.pop(server_id, None)
+        if target is not None:
+            target.initialized = False
+            target.response_dispatcher.shutdown()
+            if target.lifecycle_scope is not None:
+                target.lifecycle_scope.cancel()
 
         # Explicit container stop, shielded so an outer cancellation can't
         # skip it. stop_container has its own internal timeout.
         if target is not None and target.container_info is not None:
             runtime, container_name = target.container_info
-            with anyio.CancelScope(shield=True):
+            try:
                 await stop_container(runtime, container_name)
+            except Exception as exc:
+                logger.warning("Error stopping target container (%s)", type(exc).__name__)
 
         if target and target.ds_read_send:
             try:
@@ -189,28 +236,30 @@ class TargetManager:
             except (anyio.ClosedResourceError, anyio.EndOfStream):
                 pass
 
-        stack = self._exit_stacks.pop(server_id, None)
         if stack:
             try:
                 await stack.aclose()
             except Exception as exc:
                 logger.warning("Error closing exit stack for %s: %s", server_id, exc)
 
-        self._state.targets.pop(server_id, None)
+        if target is not None:
+            await self._flush_departed(target)
 
-    async def _flush_loop(self, engine: MaskingEngine) -> None:
+    async def _flush_loop(self, engine: MaskingEngine, flush_lock: anyio.Lock | None = None) -> None:
+        flush_lock = flush_lock or anyio.Lock()
         while self._shutdown_event and not self._shutdown_event.is_set():
             await anyio.sleep(1.0)
-            if engine.has_pending_writes:
-                try:
+            with anyio.CancelScope(shield=True):
+                async with flush_lock:
+                    try:
+                        if engine.has_pending_writes:
+                            await engine.flush_pending()
+                    except Exception:
+                        logger.exception("Failed to flush aliases for hot-added target")
+        with anyio.CancelScope(shield=True):
+            async with flush_lock:
+                if engine.has_pending_writes:
                     await engine.flush_pending()
-                except Exception:
-                    logger.exception("Failed to flush aliases for hot-added target")
-        if engine.has_pending_writes:
-            try:
-                await engine.flush_pending()
-            except Exception:
-                logger.exception("Failed final flush for hot-added target")
 
     async def _monitor_token_refresh(self) -> None:
         """Background task that monitors targets for refresh needs."""

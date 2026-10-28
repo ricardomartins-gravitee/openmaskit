@@ -206,18 +206,18 @@ class TestContainerCleanup:
         assert rec.stop_calls == [("docker", f"{OPENMASKIT_NAME_PREFIX}svc")]
 
     @pytest.mark.anyio
-    async def test_stop_called_on_exception_during_yield(self, fakes, tmp_path):
+    async def test_stop_called_on_exception_during_yield(self, fakes, tmp_path, caplog):
         fake_stdio, rec = fakes
         fake_stdio.raise_during_yield = RuntimeError("upstream died")
         cfg = UpstreamStdioConfig(command="docker", args=["run", "--rm", "img"])
 
-        with pytest.raises(RuntimeError, match="upstream died"):
-            async with connect_upstream(
-                cfg, store_path=str(tmp_path / "store.db"), server_id="svc"
-            ):
-                pass
+        async with connect_upstream(
+            cfg, store_path=str(tmp_path / "store.db"), server_id="svc"
+        ):
+            pass
 
-        # Cleanup must still have fired despite the exception.
+        # Teardown failure belongs to this owner, not the dashboard task.
+        assert "Upstream transport stopped (RuntimeError)" in caplog.text
         assert rec.stop_calls == [("docker", f"{OPENMASKIT_NAME_PREFIX}svc")]
 
     @pytest.mark.anyio
