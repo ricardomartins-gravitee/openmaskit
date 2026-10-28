@@ -106,7 +106,7 @@ jobs:
           uv run --frozen --group e2e pytest tests/e2e -m e2e -v
           --basetemp=.runtime/acceptance
           --junitxml=.runtime/acceptance.xml
-          --screenshot only-on-failure --output .runtime/browser-results
+          --screenshot only-on-failure --tracing retain-on-failure --output .runtime/browser-results
       - name: Save acceptance results
         if: always()
         uses: actions/upload-artifact@v4

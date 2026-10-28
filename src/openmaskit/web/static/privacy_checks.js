@@ -1,4 +1,6 @@
 // Analyzer-owned check definitions and explicit per-server/tool assignments.
+const PRIVACY_RECONCILIATION_TIMEOUT_MS = 2000;
+
 function privacyChecksPanel() {
     const match = window.location.pathname.match(/^\/targets\/([^/]+)\/tools$/);
     const scope = match ? decodeURIComponent(match[1]) : null;
@@ -9,10 +11,10 @@ function privacyChecksPanel() {
         providerForm: {}, checkForm: {}, entitiesText: '', pathsText: '',
         selectedAnalyzer: '', assignmentForm: {}, checkTool: '*', enableOnSave: false,
         api() { return this.scope ? `/api/targets/${encodeURIComponent(this.scope)}/privacy` : '/api/privacy'; },
-        async request(url, body) {
-            const response = await fetch(url, body === undefined ? undefined : {
+        async request(url, body, options = {}) {
+            const response = await fetch(url, {...options, ...(body === undefined ? {} : {
                 method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
-            });
+            })});
             const data = await response.json();
             if (!response.ok) {
                 const detail = (data.details || []).map(d => `${d.field}: ${d.message}`).join('; ');
@@ -30,8 +32,8 @@ function privacyChecksPanel() {
             } catch (error) { this.error = error.message; }
             finally { this.loading = false; }
         },
-        async load() {
-            const data = await this.request(this.api());
+        async load(options = {}) {
+            const data = await this.request(this.api(), undefined, options);
             this.providers = data.providers; this.checks = data.checks; this.assignments = data.assignments;
         },
         async perform(action, message) {
@@ -39,9 +41,15 @@ function privacyChecksPanel() {
             this.busy = true; this.error = ''; this.notice = '';
             try { await action(); await this.load(); this.notice = message; }
             catch (error) {
-                // Keep any successfully saved definition visible after a later assignment fails.
-                try { await this.load(); } catch (_) { /* Preserve the original error. */ }
                 this.error = error.message;
+                // Keep any successfully saved definition visible after a later assignment fails.
+                // Bound this best-effort read while retaining the busy guard;
+                // abort before allowing retry so no stale load can race it.
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), PRIVACY_RECONCILIATION_TIMEOUT_MS);
+                try { await this.load({signal: controller.signal}); }
+                catch (_) { /* Preserve the original error. */ }
+                finally { clearTimeout(timer); }
             }
             finally { this.busy = false; }
         },

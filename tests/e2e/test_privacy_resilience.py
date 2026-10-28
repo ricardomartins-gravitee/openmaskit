@@ -42,6 +42,41 @@ def test_failed_save_keeps_form_data_and_retry_creates_one_definition(dashboard_
     expect(analyzer_card(page, "Synthetic analyzer")).to_have_count(1)
 
 
+def test_failed_save_recovers_when_reconciliation_stalls(dashboard_page):
+    page = dashboard_page
+    open_provider(page)
+    held = []
+
+    def hold_reconciliation(route):
+        held.append(route)
+
+    page.route("**/api/privacy/providers/create", lambda route: route.fulfill(
+        status=503, json={"error": "Synthetic service unavailable"}), times=1)
+    page.route("**/api/privacy", hold_reconciliation)
+    save = modal(page).locator("button[type='submit']")
+    with page.expect_event("requestfailed", predicate=lambda request:
+                           request.method == "GET" and request.url.endswith("/api/privacy")) as cancelled:
+        with page.expect_request(lambda request:
+                                 request.method == "GET" and request.url.endswith("/api/privacy")):
+            with page.expect_response(lambda response:
+                                      response.status == 503 and response.url.endswith("/api/privacy/providers/create")):
+                save.click()
+        # The held read never fulfills; recovery must not depend on its result.
+        expect(modal(page).get_by_role("alert")).to_have_text("Synthetic service unavailable")
+        expect(save).to_be_enabled()
+    assert cancelled.value.failure, "The stalled read must be cancelled before retry is enabled"
+    assert len(held) == 1
+    expect(modal(page).get_by_role("textbox", name="Name", exact=True)).to_have_value("Synthetic analyzer")
+    expect(modal(page).get_by_label("Local service URL")).to_have_value(ENDPOINT)
+    assert library()["providers"] == []
+    page.unroute("**/api/privacy", hold_reconciliation)
+    save.click()
+    expect(modal(page)).not_to_be_visible()
+    assert len(library()["providers"]) == 1
+    page.reload()
+    expect(analyzer_card(page, "Synthetic analyzer")).to_have_count(1)
+
+
 def test_pending_save_disables_duplicate_submission(dashboard_page):
     page = dashboard_page
     pending = []
